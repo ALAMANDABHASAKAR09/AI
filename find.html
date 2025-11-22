@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quality Agent 🤖 Dashboard</title>
+    <!-- Import Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Import a font and icons for a modern feel -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Monaco Editor Loader Script -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.js"></script>
+    
+    <style>
+        /* Use the Inter font as the default */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4a5568; /* gray-600 */
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2d3748; /* gray-800 */
+        }
+
+        /* Container for the Monaco editor */
+        .editor-container {
+            width: 100%;
+            height: 60vh; /* Taller editor */
+            border-radius: 0.375rem; /* rounded-md */
+            overflow: hidden;
+            border: 1px solid #4a5568; /* gray-600 */
+        }
+        
+        /* Style for the test runner output */
+        #test-runner-output {
+            background: #0D1117;
+            color: #C9D1D9;
+            font-family: monospace;
+            font-size: 0.875rem;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            height: 45%; /* Half of the right panel */
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #4a5568;
+        }
+        
+        #browser-preview-iframe {
+            width: 100%;
+            height: 45%; /* Half of the right panel */
+            border: 1px solid #4a5568;
+            border-radius: 0.375rem;
+            background-color: white;
+        }
+        
+        /* Styles for the new Storyboard View */
+        .storyboard-card {
+            background-color: #2d3748; /* gray-800 */
+            border: 1px solid #4a5568; /* gray-600 */
+            border-radius: 0.5rem; /* rounded-lg */
+            margin-bottom: 1rem;
+        }
+        .storyboard-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #4a5568; /* gray-600 */
+        }
+        .storyboard-content {
+            padding: 1.5rem;
+        }
+        .test-case-card {
+            background-color: #374151; /* gray-700 */
+            padding: 1rem;
+            border-radius: 0.375rem; /* rounded-md */
+            border-left: 4px solid;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex flex-col h-screen overflow-hidden">
+
+    <!-- Header -->
+    <header class="w-full bg-gray-800 p-4 border-b border-gray-700 z-10 flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-white">Quality Agent <span class="text-blue-400">🤖</span></h1>
+        
+        <!-- URL Input in Header -->
+        <div class="flex items-center space-x-2 w-1/2 max-w-lg">
+            <label for="test-url" class="block text-sm font-medium text-gray-300 whitespace-nowrap">App URL:</label>
+            <input type="text" id="test-url" value="https://www.saucedemo.com" class="block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-gray-200 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+        </div>
+    </header>
+
+    <!-- Main 3-Column Layout Wrapper -->
+    <div id="main-layout" class="flex flex-row flex-1 overflow-hidden">
+
+        <!-- =================================== -->
+        <!-- COLUMN 1: Context (User Stories)    -->
+        <!-- =================================== -->
+        <aside class="w-1/5 bg-gray-800 p-4 overflow-y-auto border-r border-gray-700">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                Azure DevOps
+            </h2>
+            <div class="space-y-2" id="story-list">
+                <!-- Dummy User Stories will be injected here by JS -->
+            </div>
+        </aside>
+
+        <!-- =================================== -->
+        <!-- COLUMN 2: Main Editor & Workflow  -->
+        <!-- =================================== -->
+        <main class="w-3/5 p-6 overflow-y-auto relative flex flex-col">
+            
+            <!-- Step 1: Mode Selector -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Select Agent Mode</label>
+                <div class="relative flex w-full max-w-sm p-1 bg-gray-700 rounded-lg">
+                    <button id="mode-helper" onclick="setMode('Helper')" class="w-1/2 py-2 px-4 rounded-md text-sm font-medium text-gray-300 transition-all">
+                        Mode: Helper
+                    </button>
+                    <button id="mode-agent" onclick="setMode('Agent')" class="w-1/2 py-2 px-4 rounded-md text-sm font-medium text-white bg-blue-600 transition-all">
+                        Mode: Agent
+                    </button>
+                </div>
+                <p id="mode-description" class="text-xs text-gray-400 mt-2">
+                    <strong class="text-blue-400">Agent Mode:</strong> Direct API integration. Generates final assets automatically.
+                </p>
+            </div>
+
+            <!-- Step 2: Selected Story Details -->
+            <div id="story-details-container" class="bg-gray-800 p-6 rounded-lg shadow-lg hidden mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-white" id="story-title"></h3>
+                    <span class="text-xs font-medium bg-blue-900 text-blue-300 py-1 px-3 rounded-full" id="story-id"></span>
+                </div>
+                <p class="text-gray-300 mb-4" id="story-description"></p>
+                <h4 class="font-semibold text-gray-200 mb-2">Acceptance Criteria</h4>
+                <ul class="list-disc list-inside text-gray-400 space-y-1" id="story-ac"></ul>
+
+                <!-- *** NEW: Test Configuration Section (URL removed) *** -->
+                <div class="border-t border-gray-700 mt-6 pt-6">
+                    <h4 class="font-semibold text-gray-200 mb-4">Test Configuration</h4>
+                    <div>
+                        <label for="test-framework" class="block text-sm font-medium text-gray-300">Testing Approach</label>
+                        <select id="test-framework" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-gray-200 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <option value="pom">Standard (POM)</option>
+                            <option value="bdd">BDD (Gherkin-style)</option>
+                            <option value="data">Data-Driven (from JSON)</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- *** END NEW SECTION *** -->
+
+
+                <!-- Step 3: Action Buttons -->
+                <div class="border-t border-gray-700 mt-6 pt-6 flex flex-col sm:flex-row flex-wrap gap-4">
+                    <button onclick="generate('manual')" id="btn-storyboard" class="flex-1 min-w-[200px] bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-colors duration-200">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        View Storyboard & Test Cases
+                    </button>
+                    <button onclick="generate('playwright')" id="btn-playwright" class="flex-1 min-w-[200px] bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-colors duration-200">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        Generate Playwright Script
+                    </button>
+                    <button onclick="generate('cdp')" id="btn-cdp" class="flex-1 min-w-[200px] bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-colors duration-200">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101"></path></svg>
+                        Generate CDP Debug Script
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Initial Welcome Message -->
+            <div id="welcome-message" class="text-center text-gray-500 mt-20">
+                <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                <h2 class="text-2xl font-semibold">Welcome to the Quality Agent</h2>
+                <p class="text-lg">Please select a User Story from the left panel to begin.</p>
+            </div>
+            
+            <!-- Step 4: Code Editor (Moved to middle panel) -->
+            <div id="editor-panel" class="flex-1 flex flex-col hidden">
+                <!-- Tabs for Agent Mode -->
+                <div id="agent-tabs" class="mb-4 hidden">
+                    <div class="border-b border-gray-700">
+                        <nav class="-mb-px flex space-x-4" aria-label="Tabs">
+                            <button onclick="showTab('asset')" id="tab-asset" class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-400">
+                                Generated Asset (Read-only)
+                            </button>
+                            <button onclick="showTab('prompt')" id="tab-prompt" class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-500">
+                                Master Prompt (Under the Hood)
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+                <!-- Title for Helper Mode -->
+                <h3 id="helper-editor-title" class="text-lg font-semibold text-blue-400 mb-2 hidden">Edit Generated Asset</h3>
+                
+                <div class="relative flex-1">
+                    <!-- Monaco Editor container -->
+                    <div id="main-editor-container" class="editor-container"></div>
+                    <button onclick="copyEditorToClipboard()" class="absolute top-2 right-2 bg-gray-900 bg-opacity-75 hover:bg-gray-700 text-gray-300 p-1.5 rounded-md z-10">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    </button>
+                </div>
+                
+                <!-- Step 5: Run Test Simulation Button -->
+                <div id="run-test-container" class="mt-4 pt-4 border-t border-gray-700 hidden">
+                     <button id="run-test-btn" onclick="runTestSimulation()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-colors duration-200">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Run Test (Simulation)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loading-spinner" class="absolute inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center backdrop-blur-sm hidden z-50">
+                <div class="flex flex-col items-center">
+                    <svg class="animate-spin h-12 w-12 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="text-white text-lg font-semibold mt-4">Agent is thinking...</p>
+                    <p class="text-gray-300" id="loading-message">Generating context-aware assets...</p>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- =================================== -->
+        <!-- COLUMN 3: Simulation Output Panel   -->
+        <!-- =================================== -->
+        <aside id="simulation-panel" class="w-1/5 bg-gray-800 p-6 overflow-y-auto border-l border-gray-700 hidden flex-col space-y-4">
+            <!-- Step 6: Test Simulation Output -->
+            <h4 class="text-lg font-semibold text-white">Live Browser Preview</h4>
+            <iframe id="browser-preview-iframe" title="Live Browser Preview"></iframe>
+            
+            <h4 class="text-lg font-semibold text-white">Test Runner Output</h4>
+            <pre id="test-runner-output"></pre>
+        </aside>
+        
+        <!-- Toast Notification for Copy -->
+        <div id="toast" class="fixed bottom-6 right-6 bg-green-600 text-white py-2 px-4 rounded-lg shadow-lg transition-all opacity-0 translate-y-2 z-50">
+            Copied to clipboard!
+        </div>
+
+    </div>
+    
+    <!-- =================================== -->
+    <!-- NEW: Storyboard View (Full Screen)  -->
+    <!-- =================================== -->
+    <div id="storyboard-view" class="hidden absolute inset-0 bg-gray-900 z-20 flex flex-col h-screen">
+        <!-- Storyboard Header -->
+        <header class="w-full bg-gray-800 p-4 border-b border-gray-700 z-10 flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-white">Storyboard & Test Case View</h1>
+            <button onclick="showEditorView()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center transition-colors duration-200">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Back to Editor
+            </button>
+        </header>
+        
+        <!-- Storyboard Content -->
+        <div class="flex-1 overflow-y-auto p-8">
+            <!-- Epic Card -->
+            <div class="storyboard-card max-w-6xl mx-auto">
+                <div class="storyboard-header">
+                    <h2 class="text-2xl font-semibold text-white">Epic: Project Phoenix (E-commerce Platform)</h2>
+                </div>
+                <div class="storyboard-content" id="storyboard-epic-content">
+                    <!-- Story content will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- DUMMY DATA ---
+        const dummyData = [
+            {
+                id: 123,
+                title: "User Login Functionality",
+                description: "As a user, I want to be able to log in to the application with my email and password so that I can access my personal dashboard.",
+                acceptanceCriteria: [
+                    "Given I am on the login page.",
+                    "When I enter valid credentials (user@test.com / Pass123!).",
+                    "Then I should be redirected to my dashboard.",
+                    "When I enter an invalid password.",
+                    "Then I should see an 'Invalid credentials' error message.",
+                    "When I leave the email field blank.",
+                    "Then the 'Login' button should be disabled."
+                ],
+                selectors: {
+                    username: "#user-name",
+                    password: "#password",
+                    submitBtn: "#login-button",
+                    errorMessage: "[data-test='error']"
+                }
+            },
+            {
+                id: 456,
+                title: "Password Reset Flow",
+                description: "As a user, I want to be able to reset my password if I have forgotten it, so that I can regain access to my account.",
+                acceptanceCriteria: [
+                    "Given I am on the login page and I click 'Forgot Password'.",
+                    "When I am on the 'Reset Password' page and I enter a valid, registered email.",
+                    "Then I should see a success message 'Password reset link sent'.",
+                    "When I enter an invalid or unregistered email.",
+                    "Then I should see an error message 'Email not found'."
+                ],
+                selectors: {
+                    forgotPassLink: "a.forgot-password",
+                    emailInput: "#reset-email-input",
+                    submitResetBtn: "#submit-reset",
+                    successMessage: ".alert-success",
+                    errorMessage: ".alert-danger" // Added for consistency
+                }
+            },
+            {
+                id: 789,
+                title: "Add Item to Shopping Cart",
+                description: "As a logged-in user, I want to add an item to my shopping cart from the product details page.",
+                acceptanceCriteria: [
+                    "Given I am logged in and on a product details page.",
+                    "When I click the 'Add to Cart' button.",
+                    "Then the cart icon in the header should update with a '1'.",
+                    "And a success toast 'Item added to cart' should appear."
+                ],
+                selectors: {
+                    addToCartBtn: ".btn_add_to_cart", // Corrected selector for saucedemo
+                    cartIconBadge: ".shopping_cart_badge", // Corrected selector for saucedemo
+                    successToast: ".toast-success" // Placeholder, saucedemo doesn't have one
+                }
+            }
+        ];
+        
+        // Simple HTML page for the iframe simulation
+        const fakeDashboardPage = `
+            <div style="font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100%; flex-direction: column; background-color: #f4f7f6;">
+                <h1 style="color: #2c3e50; font-weight: 600;">Welcome to your Dashboard!</h1>
+                <p style="color: #34495e;">You are successfully logged in.</p>
+                <svg style="width: 80px; height: 80px; color: #27ae60; margin-top: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+        `;
+
+        // --- APPLICATION STATE ---
+        let appState = {
+            selectedStoryId: null,
+            currentMode: 'Agent', // 'Agent' or 'Helper'
+            currentTask: null, // 'manual', 'playwright', or 'cdp'
+            generatedPrompt: '',
+            generatedAsset: '',
+            mainEditor: null, // Single editor
+        };
+
+        // --- DOM ELEMENTS ---
+        const storyList = document.getElementById('story-list');
+        const welcomeMessage = document.getElementById('welcome-message');
+        const storyDetailsContainer = document.getElementById('story-details-container');
+        const storyTitle = document.getElementById('story-title');
+        const storyId = document.getElementById('story-id');
+        const storyDescription = document.getElementById('story-description');
+        const storyAC = document.getElementById('story-ac');
+        
+        const editorPanel = document.getElementById('editor-panel');
+        const mainEditorContainer = document.getElementById('main-editor-container');
+        const helperEditorTitle = document.getElementById('helper-editor-title');
+        
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const loadingMessage = document.getElementById('loading-message');
+        const modeHelperBtn = document.getElementById('mode-helper');
+        const modeAgentBtn = document.getElementById('mode-agent');
+        const modeDescription = document.getElementById('mode-description');
+        
+        const agentTabs = document.getElementById('agent-tabs');
+        const tabAsset = document.getElementById('tab-asset');
+        const tabPrompt = document.getElementById('tab-prompt');
+        const toast = document.getElementById('toast');
+
+        const runTestContainer = document.getElementById('run-test-container');
+        const simulationPanel = document.getElementById('simulation-panel');
+        const browserPreviewFrame = document.getElementById('browser-preview-iframe');
+        const testRunnerOutput = document.getElementById('test-runner-output');
+        
+        // New View Elements
+        const mainLayout = document.getElementById('main-layout');
+        const storyboardView = document.getElementById('storyboard-view');
+        const storyboardEpicContent = document.getElementById('storyboard-epic-content');
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserStories();
+            initEditors(); // Call initEditors on DOMContentLoaded
+        });
+
+        function loadUserStories() {
+            dummyData.forEach(story => {
+                const storyElement = document.createElement('div');
+                storyElement.className = 'bg-gray-700 p-4 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors duration-200';
+                storyElement.setAttribute('data-story-id', story.id);
+                storyElement.onclick = () => selectStory(story.id);
+                storyElement.innerHTML = `
+                    <div class="flex justify-between items-center mb-1">
+                        <h4 class="font-semibold text-white truncate">${story.title}</h4>
+                        <span class="text-xs text-gray-400">ID: ${story.id}</span>
+                    </div>
+                    <p class="text-sm text-gray-400 line-clamp-2">${story.description}</p>
+                `;
+                storyList.appendChild(storyElement);
+            });
+        }
+
+        function initEditors() {
+            // Check if the loader is available
+            if (typeof window.require === 'undefined') {
+                console.error("Monaco Editor loader (loader.js) failed to load. Retrying...");
+                setTimeout(initEditors, 100); // Retry after a short delay
+                return;
+            }
+
+            // Configure the loader
+            window.require.config({
+                paths: {
+                    'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs'
+                }
+            });
+
+            // Require the main editor module
+            window.require(['vs/editor/editor.main'], () => {
+                // Configure common editor options
+                const editorOptions = {
+                    language: 'markdown',
+                    theme: 'vs-dark',
+                    automaticLayout: true,
+                    minimap: { enabled: false },
+                    wordWrap: 'on',
+                    fontSize: 14,
+                    lineNumbers: 'on',
+                    roundedSelection: false,
+                    scrollBeyondLastLine: false,
+                    readOnly: false,
+                };
+
+                // Initialize Main Editor
+                if (mainEditorContainer && !appState.mainEditor) {
+                    appState.mainEditor = window.monaco.editor.create(mainEditorContainer, editorOptions);
+                    console.log("Monaco Editor initialized successfully.");
+                }
+            }, (err) => {
+                console.error("Monaco Editor 'vs/editor/editor.main' module failed to load:", err);
+            });
+        }
+
+        // --- STATE & WORKFLOW FUNCTIONS ---
+        
+        function showEditorView() {
+            storyboardView.classList.add('hidden');
+            mainLayout.classList.remove('hidden');
+            mainLayout.classList.add('flex'); // Make sure it's a flex container again
+        }
+        
+        function showStoryboardView() {
+            if (!appState.selectedStoryId) return;
+            const story = dummyData.find(s => s.id === appState.selectedStoryId);
+            const testCases = generateTestCases(story); // Get expanded test cases
+            
+            // --- Build Storyboard HTML ---
+            storyboardEpicContent.innerHTML = `
+                <!-- Story Card -->
+                <div class="storyboard-card border-l-4 border-blue-400">
+                    <div class="storyboard-header flex justify-between items-center">
+                        <h3 class="text-xl font-semibold text-blue-300">${story.title}</h3>
+                        <span class="text-sm font-medium bg-blue-900 text-blue-300 py-1 px-3 rounded-full">ID: ${story.id}</span>
+                    </div>
+                    <div class="storyboard-content grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Positive Scenarios -->
+                        <div>
+                            <h4 class="text-lg font-semibold text-green-400 mb-4">Positive Scenarios</h4>
+                            <div class="space-y-4">
+                                ${testCases.positive.map(tc => `
+                                    <div class="test-case-card border-green-400">
+                                        <h5 class="font-semibold text-white">${tc.title}</h5>
+                                        <p class="text-sm text-gray-300 mt-1">${tc.steps.map((s, i) => `${i+1}. ${s}`).join('<br>')}</p>
+                                        <p class="text-sm text-gray-400 mt-2"><strong>Expected:</strong> ${tc.expected}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <!-- Negative Scenarios -->
+                        <div>
+                            <h4 class="text-lg font-semibold text-red-400 mb-4">Negative Scenarios</h4>
+                            <div class="space-y-4">
+                                ${testCases.negative.map(tc => `
+                                    <div class="test-case-card border-red-400">
+                                        <h5 class="font-semibold text-white">${tc.title}</h5>
+                                        <p class="text-sm text-gray-300 mt-1">${tc.steps.map((s, i) => `${i+1}. ${s}`).join('<br>')}</p>
+                                        <p class="text-sm text-gray-400 mt-2"><strong>Expected:</strong> ${tc.expected}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <!-- Edge Cases -->
+                        <div>
+                            <h4 class="text-lg font-semibold text-yellow-400 mb-4">Edge Cases</h4>
+                            <div class="space-y-4">
+                                ${testCases.edge.map(tc => `
+                                    <div class="test-case-card border-yellow-400">
+                                        <h5 class="font-semibold text-white">${tc.title}</h5>
+                                        <p class="text-sm text-gray-300 mt-1">${tc.steps.map((s, i) => `${i+1}. ${s}`).join('<br>')}</p>
+                                        <p class="text-sm text-gray-400 mt-2"><strong>Expected:</strong> ${tc.expected}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            // --- End HTML Build ---
+            
+            mainLayout.classList.add('hidden');
+            mainLayout.classList.remove('flex');
+            storyboardView.classList.remove('hidden');
+        }
+
+        function selectStory(id) {
+            appState.selectedStoryId = id;
+            const story = dummyData.find(s => s.id === id);
+
+            // Update story list UI
+            Array.from(storyList.children).forEach(child => {
+                child.classList.remove('bg-blue-600', 'hover:bg-blue-600');
+                child.classList.add('bg-gray-700', 'hover:bg-gray-600');
+                if (parseInt(child.getAttribute('data-story-id')) === id) {
+                    child.classList.add('bg-blue-600', 'hover:bg-blue-600');
+                    child.classList.remove('bg-gray-700', 'hover:bg-gray-600');
+                }
+            });
+
+            // Populate main panel
+            storyTitle.textContent = story.title;
+            storyId.textContent = `ID: ${story.id}`;
+            storyDescription.textContent = story.description;
+            storyAC.innerHTML = story.acceptanceCriteria.map(ac => `<li>${ac}</li>`).join('');
+            
+            // Set default URL for this story (example)
+            if (story.title.toLowerCase().includes('login')) {
+                document.getElementById('test-url').value = 'https://www.saucedemo.com';
+            } else if (story.title.toLowerCase().includes('password')) {
+                document.getElementById('test-url').value = 'https://www.saucedemo.com/reset.html';
+            } else {
+                 document.getElementById('test-url').value = 'https://www.saucedemo.com/inventory.html';
+            }
+
+            welcomeMessage.classList.add('hidden');
+            storyDetailsContainer.classList.remove('hidden');
+            
+            // Hide all dynamic content
+            editorPanel.classList.add('hidden');
+            runTestContainer.classList.add('hidden');
+            simulationPanel.classList.add('hidden');
+            showEditorView(); // Ensure we are on the editor view
+        }
+
+        function setMode(mode) {
+            appState.currentMode = mode;
+            if (mode === 'Agent') {
+                modeAgentBtn.classList.add('bg-blue-600', 'text-white');
+                modeAgentBtn.classList.remove('text-gray-300');
+                modeHelperBtn.classList.remove('bg-blue-600', 'text-white');
+                modeHelperBtn.classList.add('text-gray-300');
+                modeDescription.innerHTML = '<strong class="text-blue-400">Agent Mode:</strong> Direct API integration. Generates final assets automatically.';
+            } else {
+                modeHelperBtn.classList.add('bg-blue-600', 'text-white');
+                modeHelperBtn.classList.remove('text-gray-300');
+                modeAgentBtn.classList.remove('bg-blue-600', 'text-white');
+                modeAgentBtn.classList.add('text-gray-300');
+                modeDescription.innerHTML = '<strong class="text-yellow-400">Helper Mode:</strong> Generates an editable asset for you to review and run.';
+            }
+            // If an asset is already generated, re-render the output panel
+            if (editorPanel.classList.contains('hidden') === false) {
+                renderOutput();
+            }
+        }
+        
+        function readInputs() {
+            const url = document.getElementById('test-url').value;
+            const framework = document.getElementById('test-framework').value;
+            return { url, framework };
+        }
+
+        function generate(taskType) {
+            if (!appState.selectedStoryId) return;
+            
+            // NEW: Handle 'manual' task by showing storyboard
+            if (taskType === 'manual') {
+                showStoryboardView();
+                return;
+            }
+            
+            // Reset simulation views
+            runTestContainer.classList.add('hidden');
+            simulationPanel.classList.add('hidden');
+
+            appState.currentTask = taskType;
+            const story = dummyData.find(s => s.id === appState.selectedStoryId);
+            const options = readInputs(); // Read config values
+
+            loadingMessage.textContent = "Generating context-aware assets...";
+            loadingSpinner.classList.remove('hidden');
+
+            // Simulate AI generation time
+            setTimeout(() => {
+                // 1. Generate the Master Prompt (now with options)
+                appState.generatedPrompt = generateMasterPrompt(story, taskType, options);
+                
+                // 2. Render the output (which will call getRawCodeForEditor with options)
+                renderOutput();
+                
+                // 3. Show "Run Test" button if applicable
+                if (taskType === 'playwright' || taskType === 'cdp') {
+                    runTestContainer.classList.remove('hidden');
+                }
+                
+                loadingSpinner.classList.add('hidden');
+            }, 1500);
+        }
+
+        function renderOutput() {
+            editorPanel.classList.remove('hidden'); // Show the editor panel
+            if (!appState.mainEditor) {
+                console.error("Editor not initialized, trying to re-init...");
+                initEditors(); // Try to initialize again
+                return; // Wait for init
+            }
+            
+            const story = dummyData.find(s => s.id === appState.selectedStoryId);
+            const lang = appState.currentTask === 'playwright' || appState.currentTask === 'cdp' ? 'typescript' : 'markdown';
+            const options = readInputs(); // Get current options
+            
+            if (appState.currentMode === 'Agent') {
+                agentTabs.classList.remove('hidden');
+                helperEditorTitle.classList.add('hidden');
+                
+                // Agent mode starts on the 'asset' tab
+                showTab('asset'); 
+
+            } else { // Helper Mode
+                agentTabs.classList.add('hidden');
+                helperEditorTitle.classList.remove('hidden');
+
+                // Set content for Helper Mode (passing options)
+                const editorValue = (lang === 'typescript') ? getRawCodeForEditor(story, appState.currentTask, options) : "/* 'Manual Report' is now in 'View Storyboard' */";
+                
+                appState.mainEditor.updateOptions({ readOnly: false });
+                window.monaco.editor.setModelLanguage(appState.mainEditor.getModel(), lang);
+                appState.mainEditor.setValue(editorValue);
+            }
+        }
+        
+        function runTestSimulation() {
+            if (!appState.selectedStoryId) return;
+            const story = dummyData.find(s => s.id === appState.selectedStoryId);
+            const options = readInputs(); // Get config for simulation
+            
+            // Show the simulation container
+            simulationPanel.classList.remove('hidden');
+            
+            // Clear previous results
+            testRunnerOutput.innerHTML = '';
+            browserPreviewFrame.srcdoc = '<div style="font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100%; color: #999;">Waiting for test to run...</div>';
+
+            const log = (message, color = '#C9D1D9') => {
+                testRunnerOutput.innerHTML += `<span style="color: ${color};">${message}</span>\n`;
+                testRunnerOutput.scrollTop = testRunnerOutput.scrollHeight; // Auto-scroll
+            };
+
+            const specFile = `${story.title.split(' ')[0].toLowerCase()}.spec.ts`;
+
+            log(`[RUNNING] ${specFile} (Mode: ${options.framework})`, '#FFA657');
+            
+            setTimeout(() => {
+                log(`  ‣ Navigating to ${options.url}...`);
+            }, 500);
+            
+            setTimeout(() => {
+                log(`  ‣ Executing ${appState.currentTask === 'cdp' ? 'CDP script...' : 'tests...'}`);
+            }, 1000);
+
+            // Simulate multiple tests running
+            const testCases = generateTestCases(story);
+            const allTests = [...testCases.positive, ...testCases.negative, ...testCases.edge];
+            let passed = 0;
+            let failed = 0;
+            
+            allTests.forEach((tc, index) => {
+                setTimeout(() => {
+                    // Simulate a failure for "invalid"
+                    if (tc.title.toLowerCase().includes('invalid')) {
+                        failed++;
+                        log(`  ✗ ${tc.title.replace("'", "")} (1.2s)`, '#ff7b72'); // Red
+                        log(`    Error: expect(locator).toBeVisible()\n    Locator: [data-test='error']\n    Message: Locator not visible`, '#gray');
+                    } else {
+                        passed++;
+                        log(`  ✓ ${tc.title.replace("'", "")} (0.8s)`, '#70e094'); // Green
+                    }
+                }, 1500 + index * 300);
+            });
+            
+            // Final summary
+            setTimeout(() => {
+                if (failed > 0) {
+                     log(`\n[FAILED] ${passed} passed, ${failed} failed in ${ (1.5 + allTests.length * 0.3).toFixed(1) }s`, '#ff7b72');
+                } else {
+                    log(`\n[PASSED] ${passed} passed in ${ (1.5 + allTests.length * 0.3).toFixed(1) }s`, '#70e094');
+                }
+                // Load the "Dashboard" page into the iFrame
+                browserPreviewFrame.srcdoc = fakeDashboardPage;
+            }, 1500 + allTests.length * 300 + 200);
+        }
+
+        function showTab(tabName) {
+            if (!appState.mainEditor) return;
+            const story = dummyData.find(s => s.id === appState.selectedStoryId);
+            const lang = appState.currentTask === 'playwright' || appState.currentTask === 'cdp' ? 'typescript' : 'markdown';
+            const options = readInputs(); // Get current options
+            
+            if (tabName === 'asset') {
+                // Show Asset
+                tabAsset.classList.add('border-blue-500', 'text-blue-400');
+                tabAsset.classList.remove('border-transparent', 'text-gray-400', 'hover:text-gray-300', 'hover:border-gray-500');
+                tabPrompt.classList.add('border-transparent', 'text-gray-400', 'hover:text-gray-300', 'hover:border-gray-500');
+                tabPrompt.classList.remove('border-blue-500', 'text-blue-400');
+                
+                // Set editor content to ASSET (passing options)
+                const editorValue = (lang === 'typescript') ? getRawCodeForEditor(story, appState.currentTask, options) : "/* 'Manual Report' is now in 'View Storyboard' */";
+                appState.mainEditor.updateOptions({ readOnly: true });
+                window.monaco.editor.setModelLanguage(appState.mainEditor.getModel(), lang);
+                appState.mainEditor.setValue(editorValue);
+
+            } else { // Show Prompt
+                tabPrompt.classList.add('border-blue-500', 'text-blue-400');
+                tabPrompt.classList.remove('border-transparent', 'text-gray-400', 'hover:text-gray-300', 'hover:border-gray-500');
+                tabAsset.classList.add('border-transparent', 'text-gray-400', 'hover:text-gray-3G00', 'hover:border-gray-500');
+                tabAsset.classList.remove('border-blue-500', 'text-blue-400');
+                
+                // Set editor content to PROMPT
+                appState.mainEditor.updateOptions({ readOnly: true });
+                window.monaco.editor.setModelLanguage(appState.mainEditor.getModel(), 'markdown');
+                appState.mainEditor.setValue(appState.generatedPrompt);
+            }
+        }
+
+        // --- CONTENT GENERATION FUNCTIONS ---
+        
+        // NEW: Centralized test case generator
+        function generateTestCases(story) {
+            let cases = {
+                positive: [],
+                negative: [],
+                edge: []
+            };
+
+            if (story.id === 123) { // User Login
+                cases.positive.push({ 
+                    title: "TC-001: Valid Login (standard_user)", 
+                    steps: ["Enter 'standard_user'", "Enter 'secret_sauce'", "Click 'Login'"], 
+                    expected: "User is redirected to '/inventory.html'.",
+                    data: { user: 'standard_user', pass: 'secret_sauce', outcome: 'pass' }
+                });
+                cases.positive.push({ 
+                    title: "TC-002: Valid Login (problem_user)", 
+                    steps: ["Enter 'problem_user'", "Enter 'secret_sauce'", "Click 'Login'"], 
+                    expected: "User is redirected to '/inventory.html' (images may be broken).",
+                    data: { user: 'problem_user', pass: 'secret_sauce', outcome: 'pass' }
+                });
+                cases.negative.push({ 
+                    title: "TC-003: Invalid Password", 
+                    steps: ["Enter 'standard_user'", "Enter 'wrong_password'", "Click 'Login'"], 
+                    expected: "Error message 'Epic sadface: Username and password do not match' is shown.",
+                    data: { user: 'standard_user', pass: 'wrong_password', outcome: 'fail' }
+                });
+                cases.negative.push({ 
+                    title: "TC-004: Invalid Username", 
+                    steps: ["Enter 'invalid_user'", "Enter 'secret_sauce'", "Click 'Login'"], 
+                    expected: "Error message 'Epic sadface: Username and password do not match' is shown.",
+                    data: { user: 'invalid_user', pass: 'secret_sauce', outcome: 'fail' }
+                });
+                 cases.negative.push({ 
+                    title: "TC-005: Blank Username", 
+                    steps: ["Leave username blank", "Enter 'secret_sauce'", "Click 'Login'"], 
+                    expected: "Error message 'Epic sadface: Username is required' is shown.",
+                    data: { user: '', pass: 'secret_sauce', outcome: 'fail_user' }
+                });
+                cases.negative.push({ 
+                    title: "TC-006: Blank Password", 
+                    steps: ["Enter 'standard_user'", "Leave password blank", "Click 'Login'"], 
+                    expected: "Error message 'Epic sadface: Password is required' is shown.",
+                    data: { user: 'standard_user', pass: '', outcome: 'fail_pass' }
+                });
+                cases.negative.push({ 
+                    title: "TC-007: Locked Out User", 
+                    steps: ["Enter 'locked_out_user'", "Enter 'secret_sauce'", "Click 'Login'"], 
+                    expected: "Error message 'Epic sadface: Sorry, this user has been locked out.' is shown.",
+                    data: { user: 'locked_out_user', pass: 'secret_sauce', outcome: 'fail_locked' }
+                });
+                cases.edge.push({ 
+                    title: "TC-008: Case-sensitive Username", 
+                    steps: ["Enter 'STANDARD_USER'", "Enter 'secret_sauce'", "Click 'Login'"], 
+                    expected: "Error message 'Epic sadface: Username and password do not match' is shown.",
+                    data: { user: 'STANDARD_USER', pass: 'secret_sauce', outcome: 'fail' }
+                });
+            } else {
+                // Default for other stories
+                cases.positive.push({ title: "TC-001: Valid Scenario", steps: ["Do step 1", "Do step 2"], expected: "Success." });
+                cases.negative.push({ title: "TC-002: Invalid Scenario", steps: ["Do step 1", "Do invalid step 2"], expected: "Failure." });
+            }
+            return cases;
+        }
+
+        function generateMasterPrompt(story, taskType, options = {}) {
+            const testCases = generateTestCases(story);
+            const allTestTitles = [...testCases.positive, ...testCases.negative, ...testCases.edge].map(tc => tc.title).join('\n- ');
+            
+            // Use the detailed prompt from the user
+            if (taskType === 'playwright') {
+                return `
+Generate a Playwright test automation script based on the following context.
+You MUST adhere to all best practices, including Page Object Model (POM).
+Generate two separate code blocks: one for the Page Object file and one for the Spec file.
+
+--- 1. CONTEXT & USER STORY ---
+
+User Story ID: ${story.id}
+Title: ${story.title}
+Acceptance Criteria:
+${story.acceptanceCriteria.map(ac => `- ${ac}`).join('\n')}
+
+--- 2. OBJECT & SELECTOR INFO (from Figma/DOM) ---
+
+{
+${Object.entries(story.selectors).map(([name, selector]) => `  "${name}": "${selector}"`).join(',\n')}
+}
+
+--- 3. TEST CONFIGURATION ---
+
+Application URL: ${options.url || 'Not Specified'}
+Test Framework Style: ${options.framework || 'pom'}
+
+--- 4. SCENARIOS TO TEST ---
+- ${allTestTitles}
+
+--- 5. PROJECT BEST PRACTICES (RULES) ---
+
+1.  **Page Object Model (POM)**:
+    * Create a separate class for each Page (e.g., \`${story.title.split(' ')[0]}Page\`).
+    * The \`MapsTo()\` method MUST go to the URL: '${options.url || '/'}'.
+
+2.  **Test Spec File**:
+    * Create tests for ALL scenarios listed in section 4.
+    * Use \`test.describe()\` to group tests for the story.
+    * Use \`test.beforeEach()\` to initialize Page Objects and navigate to the base URL.
+    
+    ${/* BDD Rule */
+    options.framework === 'bdd' ? 
+    '* Test titles MUST be in Gherkin-style (e.g., \'Given... When... Then...\').' : 
+    '* Test titles MUST be descriptive (e.g., \'should show error on invalid password\').'
+    }
+    
+    ${/* Data-Driven Rule */
+    options.framework === 'data' ?
+    '* The test(s) MUST read from a hard-coded JSON array of test data.' :
+    ''
+    }
+
+3.  **Assertions & Waits**:
+    * You MUST use web-first assertions (e.g., \`await expect(locator).toBeVisible()\`).
+    * You MUST NOT use static waits (e.g., \`page.waitForTimeout()\`).
+
+--- 6. TASK ---
+
+Generate the complete code for the following two files based on all the rules and context above:
+1.  \`${story.title.split(' ')[0].toLowerCase()}.page.ts\`
+2.  \`${story.title.split(' ')[0].toLowerCase()}.spec.ts\`
+`;
+            }
+
+            if (taskType === 'cdp') {
+                return `
+Generate a Playwright "connect over CDP" debug script for the following user story.
+This script is for debugging and will connect to an *existing* browser session.
+
+--- PRE-REQUISITES (User must do this manually) ---
+1.  Launch browser with: --remote-debugging-port=9222
+2.  Manually log in to your application in that browser.
+
+--- SCRIPT REQUIREMENTS ---
+1.  Use 'playwright.chromium.connectOverCDP("http://localhost:9222")'.
+2.  Do NOT use 'playwright.chromium.launch()'.
+3.  Get the existing context and page.
+4.  Write a simple test that navigates to a protected page (e.g., '${(options.url || '/').replace('login', 'dashboard')}') and takes a screenshot.
+
+--- CONTEXT ---
+User Story: ${story.title}
+Example protected page: '${(options.url || '/').replace('login', 'dashboard')}'
+Screenshot name: 'cdp-debug-screenshot.png'
+`;
+            }
+            return ''; // No prompt for 'manual' as it triggers a new view
+        }
+        
+        function getRawCodeForEditor(story, taskType, options = {}) {
+            // This function returns the raw, un-highlighted code for the editor
+            if (taskType === 'playwright') {
+                const pageName = story.title.split(' ')[0];
+                const pageFile = `${pageName.toLowerCase()}.page.ts`;
+                const specFile = `${pageName.toLowerCase()}.spec.ts`;
+                const testCases = generateTestCases(story);
+                
+                // --- BDD Test Titles ---
+                const bddTitles = {
+                    valid: "Given I am on the login page, When I enter valid credentials, Then I am redirected to the dashboard",
+                    invalid: "Given I am on the login page, When I enter invalid credentials, Then I see an error message"
+                };
+                
+                // --- Standard Test Titles ---
+                const standardTitles = {
+                    valid: "should allow a user to log in with valid credentials",
+                    invalid: "should show an error with invalid credentials"
+                };
+                
+                const titles = options.framework === 'bdd' ? bddTitles : standardTitles;
+                
+                // --- Data-Driven Setup ---
+                const dataDrivenHeader = `
+const testData = ${JSON.stringify(testCases.positive.concat(testCases.negative, testCases.edge).map(tc => tc.data), null, 4)};
+`;
+                const dataDrivenLoopStart = `
+    for (const data of testData) {
+        test(\`should handle user: ${"$"}{data.user} (Outcome: ${"$"}{data.outcome})\`, async ({ page }) => {
+            await ${pageName.toLowerCase()}Page.login(data.user, data.pass);
+            
+            switch (data.outcome) {
+                case 'pass':
+                    await expect(page).toHaveURL('/inventory.html');
+                    break;
+                case 'fail':
+                    await expect(${pageName.toLowerCase()}Page.errorMessage).toHaveText('Epic sadface: Username and password do not match');
+                    break;
+                case 'fail_user':
+                    await expect(${pageName.toLowerCase()}Page.errorMessage).toHaveText('Epic sadface: Username is required');
+                    break;
+                case 'fail_pass':
+                    await expect(${pageName.toLowerCase()}Page.errorMessage).toHaveText('Epic sadface: Password is required');
+                    break;
+                case 'fail_locked':
+                    await expect(${pageName.toLowerCase()}Page.errorMessage).toHaveText('Epic sadface: Sorry, this user has been locked out.');
+                    break;
+            }
+        });
+    }
+`;
+                
+                // --- Standard Test Setup ---
+                const standardTests = testCases.positive.concat(testCases.negative, testCases.edge).map(tc => {
+                    const testTitle = options.framework === 'bdd' ? tc.title.replace('TC-001: ', 'Given/When/Then: ') : tc.title.replace(/TC-\d+: /, 'should ');
+                    let assertion = '';
+                    switch (tc.data.outcome) {
+                        case 'pass':
+                            assertion = `await expect(page).toHaveURL('/inventory.html');`;
+                            break;
+                        case 'fail':
+                            assertion = `await expect(${pageName.toLowerCase()}Page.errorMessage).toHaveText('Epic sadface: Username and password do not match');`;
+                            break;
+                        case 'fail_user':
+                             assertion = `await expect(${pageName.toLowerCase()}Page.errorMessage).toHaveText('Epic sadface: Username is required');`;
+                            break;
+                        case 'fail_pass':
+                            assertion = `await expect(${pageName.toLowerCase()}Page.errorMessage).toHaveText('Epic sadface: Password is required');`;
+                            break;
+                        case 'fail_locked':
+                            assertion = `await expect(${pageName.toLowerCase()}Page.errorMessage).toHaveText('Epic sadface: Sorry, this user has been locked out.');`;
+                            break;
+                    }
+                    
+                    return `
+    test('${testTitle.replace(/'/g, "\\'")}', async ({ page }) => {
+        await ${pageName.toLowerCase()}Page.login('${tc.data.user}', '${tc.data.pass}');
+        ${assertion}
+    });
+`
+                }).join('\n');
+
+                // --- Assemble the Code ---
+                return `
+// ${pageFile}
+import { Page, Locator, expect } from '@playwright/test';
+
+export class ${pageName}Page {
+    readonly page: Page;
+${Object.entries(story.selectors).map(([name, selector]) => `    readonly ${name}: Locator;`).join('\n')}
+
+    constructor(page: Page) {
+        this.page = page;
+${Object.entries(story.selectors).map(([name, selector]) => `        this.${name} = page.locator('${selector}');`).join('\n')}
+    }
+
+    async navigateTo() {
+        await this.page.goto('${options.url || '/'}');
+    }
+
+    async login(username: string, password: string) {
+        if (username) {
+            await this.${Object.keys(story.selectors)[0]}.fill(username);
+        }
+        if (password) {
+            await this.${Object.keys(story.selectors)[1]}.fill(password);
+        }
+        await this.${Object.keys(story.selectors)[2]}.click();
+    }
+}
+
+// ${specFile}
+import { test, expect } from '@playwright/test';
+import { ${pageName}Page } from './${pageName.toLowerCase()}.page';
+${options.framework === 'data' ? dataDrivenHeader : ''}
+test.describe('${story.title}', () => {
+    let ${pageName.toLowerCase()}Page: ${pageName}Page;
+
+    test.beforeEach(async ({ page }) => {
+        ${pageName.toLowerCase()}Page = new ${pageName}Page(page);
+        await ${pageName.toLowerCase()}Page.navigateTo();
+    });
+${options.framework === 'data' ? dataDrivenLoopStart : standardTests}
+});
+`;
+            }
+            if (taskType === 'cdp') {
+                const protectedUrl = (options.url || '/').replace('login', 'dashboard').replace('www.saucedemo.com', 'www.saucedemo.com/inventory.html');
+                return `
+// cdp-debug.spec.ts (Example)
+import { test, expect, chromium } from '@playwright/test';
+
+test.describe('CDP Debug Script for: ${story.title}', () => {
+    
+    test('should connect to existing browser and take screenshot', async () => {
+        // 1. Connect to the browser you opened with --remote-debugging-port=9222
+        const browser = await chromium.connectOverCDP('http://localhost:9222');
+        
+        // 2. Get the existing context (which has your login cookies)
+        const context = browser.contexts()[0];
+        
+        // 3. Get the existing page/tab you have open
+        const page = context.pages()[0];
+        
+        // 4. Run your test actions on the already-logged-in page
+        await page.goto('${protectedUrl}'); // Navigate to a page that requires auth
+        
+        // 5. Verify you are logged in (e.g., check for a dashboard element)
+        await expect(page.locator('.app_logo')).toBeVisible(); // Changed to a dashboard element
+        
+        // 6. Take a screenshot to prove it worked
+        await page.screenshot({ path: 'cdp-debug-screenshot.png' });
+        
+        // 7. Disconnect from the browser (don't close it)
+        await browser.disconnect();
+    });
+});
+`;
+            }
+            return ''; // Should not happen for code
+        }
+        
+        // --- UTILITY FUNCTIONS ---
+        function copyEditorToClipboard() {
+            if (!appState.mainEditor) {
+                showToast('Editor not initialized.', true);
+                return;
+            }
+            const text = appState.mainEditor.getValue();
+            
+            // Use a temporary textarea to copy
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                // Use execCommand as a fallback for navigator.clipboard
+                document.execCommand('copy');
+                showToast('Copied to clipboard!');
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                showToast('Failed to copy.', true);
+            }
+            document.body.removeChild(textArea);
+        }
+        
+        function showToast(message, isError = false) {
+            toast.textContent = message;
+            toast.classList.remove('opacity-0', 'translate-y-2', 'bg-green-600', 'bg-red-600');
+            
+            if(isError) {
+                toast.classList.add('bg-red-600');
+            } else {
+                toast.classList.add('bg-green-600');
+            }
+            
+            toast.classList.add('opacity-100');
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                toast.classList.remove('opacity-100');
+            }, 2000);
+        }
+
+    </script>
+</body>
+</html>
+

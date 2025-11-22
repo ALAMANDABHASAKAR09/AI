@@ -1,0 +1,980 @@
+<!DOCTYPE long-running-html-file>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Course Discovery // Adaptive 7-Step Assessment</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-accent': '#FF9900', // AWS Orange
+                        'aws-black': '#252F3E', // AWS Black
+                        'aws-blue': '#0073BB', // AWS Blue
+                        'aws-green': '#2E8540', // AWS Green
+                        'aws-red': '#D13212', // AWS Red
+                        'aws-gray': '#545B64', // AWS Gray
+                        'aws-light-gray': '#F3F3F3', // AWS Light Gray
+                        'aws-violet': '#5A4A9C', // AWS Violet
+                        'success-green': '#2E8540', // AWS Green
+                        'error-red': '#D13212', // AWS Red
+                        'border-gray': '#545B64', // AWS Gray
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --color-deep-bg: #F3F3F3; /* AWS Light Gray */
+            --color-text-light: #252F3E; /* AWS Black */
+            --card-bg: #ffffff;
+            --text-secondary: #545B64; /* AWS Gray */
+            --border-gray: #d5dbdb; /* AWS Console Border */
+        }
+        .dark {
+            --color-deep-bg: #16191f; /* AWS Console Dark BG */
+            --color-text-light: #ffffff;
+            --card-bg: #252F3E; /* AWS Console Dark Card BG */
+            --text-secondary: #d1d5db;
+            --border-gray: #545B64; /* AWS Gray */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-deep-bg);
+            color: var(--color-text-light);
+        }
+
+        .container-card {
+            background-color: var(--card-bg);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+            border-radius: 1rem;
+            border: 1px solid var(--border-gray);
+        }
+
+        .step-indicator {
+            background-color: var(--border-gray);
+            color: var(--color-text-light);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .step-indicator.active {
+            background-color: #FF9900; /* AWS Orange */
+            color: #000000;
+        }
+
+        .step-indicator.complete {
+            background-color: #2E8540; /* AWS Green */
+            color: #ffffff;
+        }
+
+        /* NEW: Sub-step indicator styles */
+        .sub-step {
+            color: var(--text-secondary);
+            border-bottom: 4px solid transparent;
+            transition: all 0.3s;
+        }
+        .sub-step.active {
+            color: var(--color-text-light);
+            border-bottom-color: #FF9900; /* AWS Orange */
+            font-weight: 600;
+        }
+         .sub-step.complete {
+            color: #2E8540; /* AWS Green */
+            font-weight: 500;
+        }
+
+
+        /* --- Dark Mode Overrides for hard-coded Tailwind classes --- */
+        .dark .bg-white { background-color: var(--card-bg); }
+        .dark .text-gray-700 { color: var(--text-secondary); }
+        .dark .text-gray-600 { color: var(--text-secondary); }
+        .dark .text-gray-800 { color: var(--color-text-light); }
+        .dark .text-gray-500 { color: var(--text-secondary); }
+        .dark .text-gray-300 { color: var(--text-secondary); }
+        .dark .bg-gray-50 { background-color: var(--card-bg); }
+        .dark .bg-gray-300 { background-color: var(--border-gray); }
+        .dark .bg-gray-600 { background-color: var(--border-gray); }
+        .dark .border-gray-200 { border-color: var(--border-gray); }
+        .dark .border-gray-100 { border-color: var(--border-gray); }
+        .dark .border-gray-300 { border-color: var(--border-gray); }
+        .dark .hover\:bg-gray-50:hover { background-color: #3e4c5f; } /* Lighter than --card-bg */
+        
+        /* Keep specific AWS state colors */
+        .dark .text-green-600 { color: #2E8540; }
+        .dark .text-blue-600 { color: #0073BB; }
+        .dark .bg-green-100 { background-color: #1a3a2a; }
+        .dark .text-green-800 { color: #2E8540; }
+        .dark .bg-red-100 { background-color: #4a1a1a; }
+        .dark .text-red-800 { color: #D13212; }
+        .dark .bg-red-50 { background-color: #4a1a1a; }
+        .dark .text-red-700 { color: #D13212; }
+        .dark .bg-yellow-50 { background-color: #4a4a1a;}
+        .dark .text-yellow-700 { color: #FF9900; }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen">
+
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-extrabold mb-8 text-center text-black dark:text-white">Adaptive AI Learning Path Discovery</h1>
+
+        <div class="text-center mb-4">
+            <button id="theme-toggle" onclick="toggleTheme()" class="px-4 py-2 bg-primary-accent text-black rounded-full hover:bg-yellow-600 transition-colors">Toggle Theme</button>
+        </div>
+
+        <!-- Step Indicator -->
+        <div id="step-indicators" class="flex justify-between mb-8 p-4 container-card shadow-sm">
+            <!-- Indicators will be generated here -->
+        </div>
+
+        <!-- Main Content Card -->
+        <div id="main-content" class="container-card p-6 md:p-10">
+            <!-- Dynamic Content Renders Here -->
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div id="navigation-buttons" class="flex justify-between mt-6">
+            <button id="prev-btn" onclick="prevStep()" class="bg-gray-300 text-gray-700 font-semibold py-2 px-6 rounded-full shadow hover:bg-gray-400 transition-colors hidden" disabled>
+                &larr; Back
+            </button>
+            <button id="next-btn" onclick="nextStep()" class="bg-aws-blue text-white font-semibold py-2 px-6 rounded-full shadow-lg hover:bg-blue-800 transition-colors ml-auto" disabled>
+                Next &rarr;
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CORE DATA STRUCTURES & CONFIGURATION ---
+
+        const STAGE_WEIGHTS = {
+            Basics: 1,
+            Concepts: 3,
+            Depth: 5,
+        };
+        const STAGES = ['Basics', 'Concepts', 'Depth'];
+        const ALL_DOMAINS = ['Core ML', 'Ethics/Impact', 'RAG/Vector', 'Data', 'Architecture'];
+        
+        // Comprehensive Question Data (12 Questions: 6 Basic, 4 Concepts, 2 Depth)
+        const ALL_QUESTIONS = [
+            // --- BASICS (Weight 1, 6 Questions) ---
+            { id: 'b1', stage: 'Basics', type: 'MCQ', text: 'What data structure is primarily used by RAG systems to store text fragments for semantic search?', domains: ['RAG/Vector'], options: ['SQL Table', 'Vector Database', 'JSON file', 'In-memory cache'], correctAnswer: 'Vector Database', helpText: null },
+            { id: 'b2', stage: 'Basics', type: 'MCQ', text: 'What does the term "LLM" stand for?', domains: ['Core ML'], options: ['Large Logic Model', 'Long Learning Machine', 'Large Language Model', 'Layered Language Module'], correctAnswer: 'Large Language Model', helpText: null },
+            { id: 'b3', stage: 'Basics', type: 'MCQ', text: 'Which term describes a primary ethical concern related to LLMs learning from biased internet data?', domains: ['Ethics/Impact'], options: ['Model Drift', 'Overfitting', 'Data Poisoning', 'Bias Amplification'], correctAnswer: 'Bias Amplification', helpText: null },
+            { id: 'b4', stage: 'Basics', type: 'MCQ', text: 'In Python, which library is most commonly used for basic data manipulation and analysis?', domains: ['Data'], options: ['PyTorch', 'Pandas', 'Langchain', 'Matplotlib'], correctAnswer: 'Pandas', helpText: null },
+            { id: 'b5', stage: 'Basics', type: 'MCQ', text: 'What is the "Retrieval" part of RAG responsible for?', domains: ['RAG/Vector'], options: ['Generating the final answer', 'Finding relevant documents', 'Fine-tuning the model', 'Converting text to tokens'], correctAnswer: 'Finding relevant documents', helpText: null },
+            { id: 'b6', stage: 'Basics', type: 'MCQ', text: 'What is the primary purpose of a "Chain" in the Langchain library?', domains: ['Architecture'], options: ['To store vector embeddings', 'To connect multiple components in a sequence', 'To test for hallucinations', 'To filter user input'], correctAnswer: 'To connect multiple components in a sequence', helpText: null },
+
+            // --- CONCEPTS (Weight 3, 4 Questions) ---
+            { id: 'c1', stage: 'Concepts', type: 'ShortAnswer', text: 'Name two essential techniques a developer uses in Python to integrate an LLM\'s response into a production web application.', domains: ['Architecture', 'Data'], minLength: 75, helpText: 'Minimum 75 words. Focus on API interaction (e.g., handling HTTP requests) and data serialization (e.g., JSON).' },
+            { id: 'c2', stage: 'Concepts', type: 'ShortAnswer', text: 'Describe the two main stages of a RAG pipeline (Indexing and Retrieval/Generation). What happens in each?', domains: ['RAG/Vector'], minLength: 75, helpText: 'Minimum 75 words. Explain what happens to documents *before* a user asks a question, and what happens *after*.' },
+            { id: 'c3', stage: 'Concepts', type: 'ShortAnswer', text: 'Explain the role of "Agents" and "Tools" in Langchain. How do they work together?', domains: ['Architecture', 'Core ML'], minLength: 75, helpText: 'Minimum 75 words. Describe how an Agent *decides* what to do and what a Tool *provides* to the agent.' },
+            { id: 'c4', stage: 'Concepts', type: 'ShortAnswer', text: 'A user complains your AI chatbot gave a harmful, biased answer. What are two different *technical* steps you could take to address this?', domains: ['Ethics/Impact', 'Data'], minLength: 75, helpText: 'Minimum 75 words. Think about the data (e.g., filtering input/output) or improving the fine-tuning data.' },
+
+            // --- DEPTH (Weight 5, 2 Questions) ---
+            { id: 'd1', stage: 'Depth', type: 'LongAnswer', text: 'Explain why relying solely on Fine-Tuning is often a poor architectural choice for a domain-specific internal chatbot compared to using RAG.', domains: ['RAG/Vector', 'Architecture'], minLength: 150, helpText: 'Minimum 150 words. Contrast them on data freshness, cost of updating, and hallucination risk for factual data.' },
+            { id: 'd2', stage: 'Depth', type: 'LongAnswer', text: 'You are designing an AI for medical diagnosis. What are the top 3 *ethical* and *architectural* risks you must design for, and how would you mitigate them?', domains: ['Ethics/Impact', 'Architecture'], minLength: 150, helpText: 'Minimum 150 words. Go beyond "bias". Consider data privacy (e.g., PII), factual accuracy (hallucination), and user trust/explainability.' },
+        ];
+        
+        // Group questions by stage for rendering
+        const STAGED_QUESTIONS = {
+            Basics: ALL_QUESTIONS.filter(q => q.stage === 'Basics'),
+            Concepts: ALL_QUESTIONS.filter(q => q.stage === 'Concepts'),
+            Depth: ALL_QUESTIONS.filter(q => q.stage === 'Depth'),
+        };
+
+        // Course Data for Recommendations (simplified for integration, using domain names)
+        const COURSES = [
+            { level: 'Beginner', topics: ['Core ML', 'Data'], duration: '1-4 Weeks', title: 'Introduction to Generative AI', description: 'Covers fundamental concepts of LLMs, tokenization, and basic prompt engineering.' },
+            { level: 'Beginner', topics: ['Ethics/Impact'], duration: '1 Week', title: 'Ethical AI and Hallucination Mitigation', description: 'Focuses on identifying bias, reducing factual errors, and responsible deployment.' },
+            { level: 'Intermediate', topics: ['RAG/Vector', 'Data'], duration: '4-12 Weeks', title: 'Building RAG Systems with Vector Databases', description: 'A deep dive into embedding models, vector storage, and advanced retrieval techniques.' },
+            { level: 'Intermediate', topics: ['Core ML', 'Architecture'], duration: '4-12 Weeks', title: 'PEFT and Model Fine-Tuning Workshop', description: 'Hands-on training in LoRA, QLoRA, and other parameter-efficient techniques for customization.' },
+            { level: 'Intermediate', topics: ['Architecture'], duration: '1-4 Weeks', title: 'Production LLMOps Fundamentals', description: 'Learn the essentials of deploying, monitoring, and maintaining LLMs in a production environment.' },
+            { level: 'Expert', topics: ['RAG/Vector', 'Architecture'], duration: '12+ Weeks', title: 'Advanced Scalable LLM System Design', description: 'Mastering distributed RAG, secure architecture, and real-time data pipelines for massive scale.' },
+            { level: 'Expert', topics: ['Core ML', 'Ethics/Impact'], duration: '12+ Weeks', title: 'Cutting-Edge LLM Research and Alignment', description: 'Explores the latest research in model alignment, advanced preference modeling, and self-correction methods.' },
+        ];
+
+        // Default courses for fallback
+        const DEFAULT_COURSES = [
+            { level: 'All Levels', topics: ['Foundation'], duration: 'Self-Paced', title: 'The Complete LLM Engineering Roadmap', description: 'A comprehensive, self-paced curriculum covering all domains from fundamentals to advanced deployment strategies.' },
+            { level: 'Beginner', topics: ['Core ML'], duration: '4 Weeks', title: 'Prompt Engineering for Developers', description: 'A practical course focused on writing effective prompts and using APIs for common tasks.' },
+            { level: 'Intermediate', topics: ['RAG/Vector'], duration: '6 Weeks', title: 'Practical RAG Implementation', description: 'A project-based course to deploy a full RAG system with LlamaIndex.' },
+        ];
+
+        // --- 2. APPLICATION STATE MANAGEMENT ---
+
+        // NEW: Updated STEP_NAMES array to 7 steps
+        const STEP_NAMES = ['Field', 'Level', 'Topic', 'Duration', 'Assessment', 'Results', 'Explorer'];
+        let appState = {
+            currentStep: 1,
+            maxStep: 1, 
+            assessmentSubStep: 'Basics', // NEW: To track progress within Step 5
+            selections: {
+                field: null,
+                level: null,
+                topic: [],
+                duration: [],
+                assessmentAnswers: {}, 
+                assessmentResults: null,
+            }
+        };
+
+        // --- 3. UI RENDERING UTILITIES ---
+
+        function renderStepIndicators() {
+            // This function automatically supports the new 7-step array
+            const container = document.getElementById('step-indicators');
+            container.innerHTML = STEP_NAMES.map((name, index) => {
+                const step = index + 1;
+                let classes = 'step-indicator w-8 h-8 flex items-center justify-center text-sm font-bold rounded-full cursor-pointer';
+
+                if (step < appState.currentStep) {
+                    classes += ' complete';
+                } else if (step === appState.currentStep) {
+                    classes += ' active';
+                } else if (step > appState.maxStep) {
+                     classes += ' opacity-50 pointer-events-none';
+                }
+                
+                const onClick = (step <= appState.maxStep && step < appState.currentStep) ? `onclick="goToStep(${step})"` : '';
+
+                return `
+                    <div class="text-center flex-1">
+                        <div class="flex items-center justify-center mb-1">
+                            <div class="${classes}" ${onClick}>${step}</div>
+                        </div>
+                        <p class="text-xs font-medium text-gray-600 hidden sm:block">${name}</p>
+                    </div>
+                    ${index < STEP_NAMES.length - 1 ? '<div class="flex-1 border-t-2 border-dashed border-gray-300 self-center mx-1"></div>' : ''}
+                `;
+            }).join('');
+        }
+        
+        // Helper function to check if a stage's questions are all answered
+        function isStageComplete(stageName) {
+            const questions = STAGED_QUESTIONS[stageName];
+            if (!questions) return false;
+
+            return questions.every(q => {
+                const answer = appState.selections.assessmentAnswers[q.id];
+                if (q.type === 'MCQ') {
+                    return !!answer;
+                } else { // Short/Long Answer
+                    const wordCount = (answer || '').split(/\s+/).filter(Boolean).length;
+                    return wordCount >= q.minLength;
+                }
+            });
+        }
+
+        // UPDATED: Navigation logic for new 7-step flow
+        function updateNavigation() {
+            const nextBtn = document.getElementById('next-btn');
+            const prevBtn = document.getElementById('prev-btn');
+
+            prevBtn.classList.toggle('hidden', appState.currentStep <= 1);
+
+            let enableNext = false;
+            switch(appState.currentStep) {
+                case 1: 
+                    enableNext = !!appState.selections.field;
+                    break;
+                case 2: 
+                    enableNext = !!appState.selections.level;
+                    break;
+                case 3: 
+                    enableNext = appState.selections.topic.length > 0;
+                    break;
+                case 4: 
+                    enableNext = appState.selections.duration.length > 0;
+                    break;
+                case 5: // Assessment
+                    // Main "Next" button is only enabled after scoring is complete
+                    enableNext = !!appState.selections.assessmentResults; 
+                    nextBtn.textContent = 'See Results \u2192';
+                    break;
+                case 6: // Results
+                    enableNext = true; // Always allow moving from Results to Explorer
+                    nextBtn.textContent = 'Course Explorer \u2192';
+                    break;
+                case 7: // Explorer
+                    enableNext = false; 
+                    nextBtn.classList.add('hidden');
+                    break;
+                default:
+                    enableNext = false;
+            }
+            nextBtn.classList.toggle('hidden', appState.currentStep === STEP_NAMES.length);
+            nextBtn.disabled = !enableNext;
+            
+            // Reset button text if not on step 5 or 6
+            if (appState.currentStep !== 5 && appState.currentStep !== 6) {
+                nextBtn.textContent = 'Next \u2192';
+            }
+
+            if (enableNext && appState.currentStep < STEP_NAMES.length && appState.currentStep >= appState.maxStep) {
+                appState.maxStep = appState.currentStep + 1;
+            }
+        }
+
+        // --- 4. FILTER/SELECTION HANDLERS ---
+
+        function handleFilterChange(event) {
+            const target = event.target;
+            const filterType = target.getAttribute('data-filtertype');
+            const value = target.value;
+
+            if (target.type === 'radio') {
+                appState.selections[filterType] = value;
+            } else if (target.type === 'checkbox') {
+                let current = appState.selections[filterType];
+                if (target.checked) {
+                    if (!current.includes(value)) current.push(value);
+                } else {
+                    appState.selections[filterType] = current.filter(v => v !== value);
+                }
+            }
+            updateNavigation();
+        }
+
+        // UPDATED: Clear results if an answer is changed
+        function handleAssessmentChange(event) {
+            const target = event.target;
+            const qId = target.getAttribute('data-q-id');
+            
+            if (target.type === 'textarea' || target.type === 'text') {
+                appState.selections.assessmentAnswers[qId] = target.value;
+            } 
+            else if (target.type === 'radio') {
+                appState.selections.assessmentAnswers[qId] = target.value;
+            }
+            
+            // If user changes an answer, clear results to force re-submission
+            if (appState.selections.assessmentResults) {
+                appState.selections.assessmentResults = null;
+            }
+            
+            // Re-render Step 5 to update word counts and sub-step nav state
+            renderStep5Assessment();
+            // Update main navigation (to disable "See Results" button)
+            updateNavigation(); 
+        }
+
+
+        function generateSelectionHTML(options, filterType, selectionType) {
+            return `
+                <div id="${filterType}-filters" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    ${options.map(option => {
+                        const isChecked = selectionType === 'radio' 
+                            ? appState.selections[filterType] === option
+                            : appState.selections[filterType].includes(option);
+                        
+                        return `
+                            <label class="flex items-center p-4 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${isChecked ? 'border-aws-blue bg-blue-50 shadow-md' : 'border-gray-200'}">
+                                <input type="${selectionType}" 
+                                    name="${filterType}" 
+                                    data-filtertype="${filterType}" 
+                                    value="${option}" 
+                                    onchange="handleFilterChange(event)" 
+                                    class="mr-3" 
+                                    ${isChecked ? 'checked' : ''}>
+                                <span class="font-medium text-gray-700">${option}</span>
+                            </label>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        // --- 5. STEP RENDERING FUNCTIONS ---
+
+        function renderStep1Field() {
+            const html = `
+                <h2 class="text-2xl font-bold mb-4">Step 1: Major Area (Field)</h2>
+                <p class="text-gray-600 mb-6">What is the primary domain you are interested in?</p>
+                ${generateSelectionHTML(['AI/ML', 'Data Science', 'MLOps', 'Generative AI'], 'field', 'radio')}
+            `;
+            document.getElementById('main-content').innerHTML = html;
+        }
+
+        function renderStep2Level() {
+            const html = `
+                <h2 class="text-2xl font-bold mb-4">Step 2: Stated Experience (Level)</h2>
+                <p class="text-gray-600 mb-6">How experienced are you in this field?</p>
+                ${generateSelectionHTML(['Basic/Foundational', 'Intermediate/Practical', 'Advanced/Expert'], 'level', 'radio')}
+            `;
+            document.getElementById('main-content').innerHTML = html;
+        }
+
+        function renderStep3Topic() {
+            const html = `
+                <h2 class="text-2xl font-bold mb-4">Step 3: Specific Interest (Topic)</h2>
+                <p class="text-gray-600 mb-6">Select one or more specific topics you want to focus on. (Multi-select)</p>
+                ${generateSelectionHTML(['LLM Fine-Tuning', 'RAG', 'Computer Vision', 'Time-Series Analysis', 'Ethical AI', 'Deep Learning', 'Data Visualization', 'Cloud Deployment'], 'topic', 'checkbox')}
+            `;
+            document.getElementById('main-content').innerHTML = html;
+        }
+
+        function renderStep4Duration() {
+            const html = `
+                <h2 class="text-2xl font-bold mb-4">Step 4: Commitment (Duration)</h2>
+                <p class="text-gray-600 mb-6">What time commitment are you looking for? (Multi-select)</p>
+                ${generateSelectionHTML(['Short (1-2 Weeks)', 'Medium (3-5 Weeks)', 'Long (6+ Weeks)', 'On-Demand/Self-Paced'], 'duration', 'checkbox')}
+            `;
+            document.getElementById('main-content').innerHTML = html;
+        }
+
+        // Helper to render a single assessment stage's questions
+        function renderQuestionStage(stageName) {
+            const questions = STAGED_QUESTIONS[stageName];
+            const weight = STAGE_WEIGHTS[stageName];
+            const stageColor = stageName === 'Basics' ? 'border-aws-green' : stageName === 'Concepts' ? 'border-primary-accent' : 'border-aws-red';
+            
+            return `
+                <div class="my-6 p-6 rounded-xl shadow-md border-t-4 ${stageColor} bg-white">
+                    <h3 class="text-xl font-bold mb-4 text-gray-700">${stageName} Stage (Weight: x${weight})</h3>
+                    <div class="space-y-6">
+                        ${questions.map((qData, index) => {
+                            const qId = qData.id;
+                            const isMCQ = qData.type === 'MCQ';
+                            const currentAnswer = appState.selections.assessmentAnswers[qId] || '';
+                            
+                            let helpBlock = '';
+                            if (!isMCQ) {
+                                helpBlock = `
+                                    <p class="text-xs text-yellow-700 bg-yellow-50 p-2 rounded-lg mt-2">
+                                        <span class="font-medium">Hint:</span> ${qData.helpText}
+                                        <br>
+                                        <span class="font-bold">Minimum Word Count: ${qData.minLength}</span>
+                                        (Current: <span id="word-count-${qId}">${currentAnswer.split(/\s+/).filter(Boolean).length}</span>)
+                                    </p>
+                                `;
+                            }
+
+                            return `
+                                <div class="p-4 border rounded-lg bg-gray-50 shadow-sm" data-question-id="${qId}">
+                                    <p class="font-semibold mb-3">${qData.text} <span class="text-xs text-gray-500">(${qData.domains.join(', ')})</span></p>
+                                    
+                                    ${isMCQ ? 
+                                        // MCQ Options
+                                        qData.options.map((opt, optIndex) => `
+                                            <label class="flex items-center py-2 px-3 my-1 rounded-md cursor-pointer hover:bg-gray-100">
+                                                <input type="radio" 
+                                                    name="${qId}" 
+                                                    data-q-id="${qId}"
+                                                    value="${opt}" 
+                                                    onchange="handleAssessmentChange(event)"
+                                                    ${currentAnswer === opt ? 'checked' : ''}
+                                                    class="w-4 h-4 text-aws-blue mr-3"
+                                                >
+                                                <span class="text-gray-700">${opt}</span>
+                                            </label>
+                                        `).join('')
+                                    :
+                                        // Short/Long Answer Textarea
+                                        `
+                                        <textarea 
+                                            rows="${qData.minLength > 100 ? 8 : 4}" 
+                                            data-q-id="${qId}"
+                                            placeholder="Provide your detailed answer here..." 
+                                            oninput="handleAssessmentChange(event); updateWordCount('${qId}', this.value);"
+                                            class="w-full p-2 border border-gray-300 rounded-md mt-2 focus:ring-aws-blue focus:border-aws-blue"
+                                        >${currentAnswer}</textarea>
+                                        ${helpBlock}
+                                        `
+                                    }
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // NEW: Step 5 - Main Assessment Container
+        function renderStep5Assessment() {
+            const subStep = appState.assessmentSubStep;
+            const basicsComplete = isStageComplete('Basics');
+            const conceptsComplete = isStageComplete('Concepts');
+
+            // --- 1. Render Sub-Step Indicators ---
+            const subStepIndicatorHTML = `
+                <div class="flex justify-around border-b border-gray-300 mb-6">
+                    <div class="pb-2 px-4 text-center sub-step ${subStep === 'Basics' ? 'active' : ''} ${basicsComplete ? 'complete' : ''}">
+                        <span class="text-sm font-medium">1. Basics</span>
+                    </div>
+                    <div class="pb-2 px-4 text-center sub-step ${subStep === 'Concepts' ? 'active' : ''} ${conceptsComplete ? 'complete' : ''}">
+                        <span class="text-sm font-medium">2. Concepts</span>
+                    </div>
+                    <div class="pb-2 px-4 text-center sub-step ${subStep === 'Depth' ? 'active' : ''}">
+                        <span class="text-sm font-medium">3. Depth</span>
+                    </div>
+                </div>
+            `;
+
+            // --- 2. Render Content based on Sub-Step ---
+            let contentHTML = '';
+            let subNavHTML = '';
+            let statusHTML = `<div id="assessment-status"></div>`; // Placeholder
+
+            // Check if results are already calculated
+            if (appState.selections.assessmentResults) {
+                const results = appState.selections.assessmentResults;
+                const score = results.overallScorePercentage;
+                contentHTML = `
+                    <div class="text-center p-6 bg-green-100 text-aws-green rounded-lg">
+                        <h3 class="text-xl font-bold mb-2">Assessment Complete!</h3>
+                        <p>Your score: ${score}% (${results.totalWeightedScore} / ${results.maxWeightedScore} Weighted Points)</p>
+                        <p class="font-semibold mt-1">Your determined level is: ${results.level}</p>
+                        <p class="text-sm mt-4">You can now proceed to see your results.</p>
+                    </div>
+                `;
+            } else {
+                // --- 3. Build Sub-Navigation & Content ---
+                let prevDisabled = true;
+                let nextDisabled = true;
+                
+                switch(subStep) {
+                    case 'Basics':
+                        contentHTML = renderQuestionStage('Basics');
+                        prevDisabled = true;
+                        nextDisabled = !basicsComplete;
+                        break;
+                    case 'Concepts':
+                        contentHTML = renderQuestionStage('Concepts');
+                        prevDisabled = false;
+                        nextDisabled = !conceptsComplete;
+                        break;
+                    case 'Depth':
+                        contentHTML = `
+                            <form id="assessment-form" onsubmit="submitAssessment(event)" class="space-y-8">
+                                ${renderQuestionStage('Depth')}
+                                <button type="submit" id="submit-assessment-btn" class="w-full mt-6 bg-aws-green text-white font-semibold py-3 px-6 rounded-full shadow-lg hover:bg-green-700 transition-colors">
+                                    Submit and Score Assessment
+                                </button>
+                            </form>
+                        `;
+                        prevDisabled = false;
+                        nextDisabled = true; // No "Next" on depth, only "Submit"
+                        break;
+                }
+
+                // Build the sub-navigation buttons
+                subNavHTML = `
+                    <div class="flex justify-between mt-6 border-t pt-6">
+                        <button id="prev-sub-btn" onclick="prevSubStep()" class="bg-gray-300 text-gray-700 font-semibold py-2 px-6 rounded-full shadow hover:bg-gray-400 transition-colors"
+                            ${prevDisabled ? 'disabled class="bg-gray-100 text-gray-400 cursor-not-allowed"' : ''}>
+                            &larr; Previous Stage
+                        </button>
+                        ${subStep !== 'Depth' ? `
+                        <button id="next-sub-btn" onclick="nextSubStep()" class="bg-aws-blue text-white font-semibold py-2 px-6 rounded-full shadow-lg hover:bg-blue-800 transition-colors ml-auto"
+                            ${nextDisabled ? 'disabled class="bg-gray-100 text-gray-400 cursor-not-allowed"' : ''}>
+                            Next Stage &rarr;
+                        </button>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            // --- 4. Assemble Final HTML ---
+            const html = `
+                <h2 class="text-2xl font-bold mb-4">Step 5: Adaptive Knowledge Assessment</h2>
+                <p class="text-gray-600 mb-6">Complete all three stages. Your answers are saved as you go. You must submit the final stage to be scored.</p>
+                ${subStepIndicatorHTML}
+                <div id="sub-step-content">
+                    ${contentHTML}
+                    ${statusHTML}
+                </div>
+                ${!appState.selections.assessmentResults ? subNavHTML : ''}
+            `;
+            document.getElementById('main-content').innerHTML = html;
+        }
+
+        // NEW: Step 6 - Results (Renamed from 8)
+        function renderStep6Results() {
+            const results = appState.selections.assessmentResults;
+            
+            if (!results) {
+                 document.getElementById('main-content').innerHTML = `
+                    <h2 class="text-2xl font-bold mb-4">Error</h2>
+                    <p class="text-gray-600 mb-6">No assessment results found. Please go back to Step 5 to complete the assessment.</p>
+                 `;
+                 return;
+            }
+
+            const finalLevel = results.level;
+            const recommendations = generateRecommendations(results);
+
+            const sortedDomainScores = ALL_DOMAINS.map(domain => ({
+                domain,
+                score: results.domainPerformance[domain] || 0,
+                max: results.domainMax[domain] || 1,
+            })).sort((a, b) => (a.score / a.max) - (b.score / b.max)); 
+
+            const resultsSummaryHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                    <div class="p-6 bg-aws-blue rounded-xl shadow-lg text-white">
+                        <p class="text-sm font-medium uppercase">Overall Level</p>
+                        <h4 class="text-3xl font-bold mt-1">${finalLevel}</h4>
+                        <p class="text-xs mt-2 opacity-80">Based on weighted score and domain performance.</p>
+                    </div>
+                    <div class="p-6 bg-aws-violet rounded-xl shadow-lg text-white">
+                        <p class="text-sm font-medium uppercase">Weighted Score</p>
+                        <h4 class="text-3xl font-bold mt-1">${results.totalWeightedScore} / ${results.maxWeightedScore}</h4>
+                        <p class="text-xs mt-2 opacity-80">Score weighted by stage: Basics (x1), Concepts (x3), Depth (x5).</p>
+                    </div>
+                    <div class="p-6 bg-primary-accent rounded-xl shadow-lg text-black">
+                        <p class="text-sm font-medium uppercase">Completion Rate</p>
+                        <h4 class="text-3xl font-bold mt-1">${results.overallScorePercentage}%</h4>
+                        <p class="text-xs mt-2 opacity-80">Percentage of total weighted points achieved.</p>
+                    </div>
+                </div>
+            `;
+
+            const domainAnalysisHTML = `
+                <div class="mb-10 p-6 bg-white rounded-lg shadow-inner border">
+                    <h3 class="text-2xl font-bold mb-4 border-b pb-2">Domain Analysis</h3>
+                    <p class="text-gray-600 mb-6">The analysis below highlights your performance across key domains. Lower scores indicate suggested focus areas for courses.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${sortedDomainScores.map(({ domain, score, max }) => {
+                            const percentage = max > 0 ? Math.round((score / max) * 100) : 0;
+                            const barColor = percentage < 50 ? 'bg-aws-red' : percentage < 75 ? 'bg-primary-accent' : 'bg-aws-green';
+                            return `
+                                <div class="p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-100">
+                                    <p class="font-semibold text-gray-700 mb-1">${domain}</p>
+                                    <div class="flex items-center">
+                                        <div class="w-full bg-gray-200 rounded-full h-2.5 mr-3">
+                                            <div class="${barColor} h-2.5 rounded-full" style="width: ${percentage}%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-gray-800 w-10 text-right">${percentage}%</span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+
+            const courseCardHTML = (course, isRecommended) => `
+                <div class="course-card p-4 rounded-xl shadow-md border-t-4 ${isRecommended ? 'border-primary-accent ring-2 ring-primary-accent' : 'border-gray-200'} bg-white transition-all hover:shadow-lg">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${
+                            course.level === 'Expert' ? 'bg-red-100 text-aws-red' : 
+                            course.level === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' : 
+                            'bg-green-100 text-aws-green'
+                        }">${course.level}</span>
+                        ${isRecommended ? '<span class="text-xs font-bold text-white bg-primary-accent py-1 px-2 rounded-full shadow-md">TOP MATCH</span>' : ''}
+                    </div>
+                    <h4 class="text-lg font-bold mb-1 text-gray-800">${course.title}</h4>
+                    <p class="text-xs text-gray-500 mb-3">${course.description.substring(0, 100)}...</p>
+                    <div class="flex justify-between text-xs font-medium">
+                        <p class="text-gray-600">Duration: <strong>${course.duration}</strong></p>
+                        <p class="text-gray-600">Topics: <strong>${course.topics.join(', ')}</strong></p>
+                    </div>
+                </div>
+            `;
+            
+            const recommendationHTML = `
+                <div class="mb-10 p-6 bg-white rounded-lg shadow-inner border">
+                    <h3 class="text-2xl font-bold mb-4 border-b pb-2">Personalized Course Recommendations</h3>
+                    <p class="text-gray-600 mb-6">Based on your calculated **${finalLevel}** level and identified weak domains (${results.weakDomains.join(', ') || 'None found'}), here are your top 3 courses.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        ${recommendations.map((course, index) => courseCardHTML(course, index === 0)).join('')}
+                    </div>
+
+                    ${recommendations.length < 3 ? `
+                        <div class="mt-8 p-4 bg-red-50 rounded-lg text-sm text-red-700 border-l-4 border-red-400">
+                            No exact match courses found for your specific combination of filters and weak domains. We have provided top courses for your calculated <strong>${finalLevel}</strong> level.
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            const html = `
+                <div class="bg-white p-8 rounded-xl shadow-2xl">
+                    <h2 class="text-3xl font-extrabold mb-4 text-center text-aws-green">Step 6: Your Personalized Course Path</h2>
+                    <p class="text-xl text-gray-700 text-center mb-10">You have been assigned the <strong class="text-aws-blue">${finalLevel}</strong> level.</p>
+                    
+                    ${resultsSummaryHTML}
+                    ${domainAnalysisHTML}
+                    ${recommendationHTML}
+                </div>
+            `;
+            document.getElementById('main-content').innerHTML = html;
+        }
+
+        // NEW: Step 7 - Course Explorer Placeholder
+        function renderStep7CourseExplorer() {
+             const html = `
+                <h2 class="text-2xl font-bold mb-4">Step 7: Course Explorer</h2>
+                <p class="text-gray-600 mb-6">This is the placeholder for the Course Explorer.</p>
+                <div class="w-full h-96 bg-gray-100 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center">
+                    <p class="text-gray-500 font-medium">Course Explorer Interface Will Go Here</p>
+                </div>
+            `;
+            document.getElementById('main-content').innerHTML = html;
+        }
+
+        function updateWordCount(qId, value) {
+            const count = (value || '').split(/\s+/).filter(Boolean).length;
+            const element = document.getElementById(`word-count-${qId}`);
+            if (element) {
+                element.textContent = count;
+            }
+            
+            // Re-render assessment step to update button states
+            if (appState.currentStep === 5) {
+                renderStep5Assessment();
+            }
+        }
+
+        // --- SCORING AND LEVEL DETERMINATION LOGIC ---
+
+        function calculateResults(answers) {
+            let totalWeightedScore = 0;
+            let maxWeightedScore = 0;
+            let domainPerformance = {};
+            let domainMax = {};
+
+            ALL_QUESTIONS.forEach(q => {
+                const stage = q.stage;
+                const weight = STAGE_WEIGHTS[stage];
+                const userAnswer = answers[q.id];
+                let isCorrect = false;
+
+                if (q.type === 'MCQ') {
+                    isCorrect = userAnswer === q.correctAnswer;
+                } else { // ShortAnswer or LongAnswer
+                    const minLength = q.minLength;
+                    isCorrect = (userAnswer || '').split(/\s+/).filter(Boolean).length >= minLength;
+                }
+
+                if (isCorrect) {
+                    totalWeightedScore += weight;
+                }
+                maxWeightedScore += weight;
+
+                q.domains.forEach(domain => {
+                    if (!domainPerformance[domain]) {
+                        domainPerformance[domain] = 0;
+                        domainMax[domain] = 0;
+                    }
+                    domainMax[domain] += weight;
+                    if (isCorrect) {
+                        domainPerformance[domain] += weight;
+                    }
+                });
+            });
+
+            const overallScorePercentage = maxWeightedScore > 0 ? (totalWeightedScore / maxWeightedScore) : 0;
+            let level = 'Beginner';
+
+            if (overallScorePercentage >= 0.75) {
+                level = 'Expert';
+            } else if (overallScorePercentage >= 0.45) {
+                level = 'Intermediate';
+            }
+
+            const statedLevel = appState.selections.level;
+            let finalLevel = level;
+
+            if (statedLevel === 'Advanced/Expert' && level !== 'Expert') {
+                finalLevel = level; 
+            } else if (statedLevel === 'Intermediate/Practical' && level === 'Beginner') {
+                finalLevel = 'Beginner';
+            } else if (statedLevel === 'Advanced/Expert' && level === 'Expert') {
+                finalLevel = 'Expert';
+            }
+
+            const weakDomains = ALL_DOMAINS.filter(domain => {
+                const score = domainPerformance[domain] || 0;
+                const max = domainMax[domain] || 1;
+                return (score / max) < 0.50;
+            });
+
+
+            return {
+                totalWeightedScore,
+                maxWeightedScore,
+                overallScorePercentage: Math.round(overallScorePercentage * 100),
+                level: finalLevel,
+                domainPerformance,
+                domainMax,
+                weakDomains
+            };
+        }
+
+        function generateRecommendations(results) {
+            if (!results) return DEFAULT_COURSES;
+            const targetLevel = results.level;
+            const weakDomains = results.weakDomains;
+            const targetTopics = appState.selections.topic;
+
+            let recommendedCourses = COURSES.filter(course => {
+                const levelMatch = course.level === targetLevel;
+                const weakDomainMatch = weakDomains.some(weakDomain => course.topics.includes(weakDomain));
+                const topicMatch = course.topics.some(t => targetTopics.includes(t));
+                return levelMatch && weakDomainMatch && topicMatch;
+            });
+            
+            if (recommendedCourses.length < 3) {
+                const topCoursesForLevelAndTopic = COURSES.filter(course => {
+                    const levelMatch = course.level === targetLevel;
+                    const topicMatch = course.topics.some(t => targetTopics.includes(t));
+                    return levelMatch && topicMatch;
+                });
+                recommendedCourses = Array.from(new Set([...recommendedCourses, ...topCoursesForLevelAndTopic]));
+            }
+
+            if (recommendedCourses.length < 3) {
+                const topCoursesForLevel = COURSES.filter(course => course.level === targetLevel).slice(0, 3);
+                recommendedCourses = Array.from(new Set([...recommendedCourses, ...topCoursesForLevel]));
+            }
+
+            if (recommendedCourses.length === 0) {
+                return DEFAULT_COURSES;
+            }
+            return recommendedCourses.slice(0, 3);
+        }
+
+        // UPDATED: submitAssessment logic
+        function submitAssessment(event) {
+            event.preventDefault();
+            
+            const basicsComplete = isStageComplete('Basics');
+            const conceptsComplete = isStageComplete('Concepts');
+            const depthComplete = isStageComplete('Depth');
+
+            if (!basicsComplete || !conceptsComplete || !depthComplete) {
+                let errorMsg = 'Please complete all assessment stages.<ul>';
+                if (!basicsComplete) errorMsg += '<li class="mt-1">- Go back to the **Basics** sub-stage to finish.</li>';
+                if (!conceptsComplete) errorMsg += '<li class="mt-1">- Go back to the **Concepts** sub-stage to finish.</li>';
+                if (!depthComplete) errorMsg += '<li class="mt-1">- Finish all questions on this page (Depth).</li>';
+                errorMsg += '</ul>';
+
+                document.getElementById('assessment-status').innerHTML = `
+                    <div class="mt-4 p-4 rounded-lg bg-red-100 text-aws-red font-medium text-left">
+                        ${errorMsg}
+                    </div>
+                `;
+                return;
+            }
+
+            const results = calculateResults(appState.selections.assessmentAnswers);
+            appState.selections.assessmentResults = results;
+
+            // Re-render Step 5 to show completion message
+            renderStep5Assessment(); 
+            // Update main navigation to enable "See Results" button
+            updateNavigation();
+        }
+
+        /**
+         * Main function to render the current step content.
+         */
+        // UPDATED: renderStep switch for 7 steps
+        function renderStep() {
+            renderStepIndicators();
+            updateNavigation();
+
+            switch (appState.currentStep) {
+                case 1:
+                    renderStep1Field();
+                    break;
+                case 2:
+                    renderStep2Level();
+                    break;
+                case 3:
+                    renderStep3Topic();
+                    break;
+                case 4:
+                    renderStep4Duration();
+                    break;
+                case 5:
+                    renderStep5Assessment();
+                    break;
+                case 6:
+                    renderStep6Results();
+                    break;
+                case 7:
+                    renderStep7CourseExplorer();
+                    break;
+                default:
+                    appState.currentStep = 1;
+                    renderStep1Field();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- 6. NAVIGATION LOGIC ---
+
+        function goToStep(step) {
+            if (step <= appState.maxStep) {
+                appState.currentStep = step;
+                renderStep();
+            }
+        }
+
+        function nextStep() {
+            if (appState.currentStep < STEP_NAMES.length) {
+                appState.currentStep++;
+                renderStep();
+            }
+        }
+
+        function prevStep() {
+            if (appState.currentStep > 1) {
+                appState.currentStep--;
+                renderStep();
+            }
+        }
+
+        // NEW: Sub-step navigation
+        function nextSubStep() {
+            if (appState.assessmentSubStep === 'Basics' && isStageComplete('Basics')) {
+                appState.assessmentSubStep = 'Concepts';
+            } else if (appState.assessmentSubStep === 'Concepts' && isStageComplete('Concepts')) {
+                appState.assessmentSubStep = 'Depth';
+            }
+            renderStep5Assessment();
+        }
+
+        function prevSubStep() {
+             if (appState.assessmentSubStep === 'Concepts') {
+                appState.assessmentSubStep = 'Basics';
+            } else if (appState.assessmentSubStep === 'Depth') {
+                appState.assessmentSubStep = 'Concepts';
+            }
+            renderStep5Assessment();
+        }
+        
+        // --- 7. THEME TOGGLE ---
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        // --- 8. INITIALIZATION ---
+        window.handleFilterChange = handleFilterChange;
+        window.handleAssessmentChange = handleAssessmentChange;
+        window.updateWordCount = updateWordCount;
+        window.submitAssessment = submitAssessment;
+        window.nextStep = nextStep;
+        window.prevStep = prevStep;
+        window.goToStep = goToStep;
+        window.toggleTheme = toggleTheme;
+        // NEW: Expose sub-step navigation
+        window.nextSubStep = nextSubStep;
+        window.prevSubStep = prevSubStep;
+
+        document.addEventListener('DOMContentLoaded', renderStep);
+
+    </script>
+</body>
+</html>
+

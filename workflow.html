@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Workflows: AI Course Navigator (Yellow/Blue Theme)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+             darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        // --- Yellow/Blue Palette ---
+                        'primary-yellow': '#FFD700', // Gold/Yellow
+                        'primary-yellow-dark': '#E6C200',
+                        'primary-yellow-light': '#FFF8DC', // Cornsilk (Light Yellow BG)
+                        'primary-blue': '#0A4F99',   // Darker Blue
+                        'primary-blue-dark': '#073B73',
+                        'primary-blue-light': '#E6F0FF', // Lighter Blue BG
+                        'accent-cyan': '#00CED1',    // Dark Turquoise / Cyan
+                        'accent-cyan-dark': '#00AFAF',
+                        'accent-cyan-light': '#E0FFFF', // Light Cyan BG
+
+                        // Neutrals
+                        'neutral-text-light': '#FFFFFF',
+                        'neutral-text-dark': '#2D3748', // Gray-700
+                        'neutral-bg-light': '#F7FAFC', // Gray-50
+                        'neutral-bg-dark': '#1A202C', // Gray-900
+                        'neutral-border-light': '#E2E8F0', // Gray-300
+                        'neutral-border-dark': '#4A5568', // Gray-600
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* --- Define CSS Variables --- */
+        :root {
+            --color-primary-yellow: #FFD700;
+            --color-primary-yellow-light: #FFF8DC;
+            --color-primary-blue: #0A4F99; /* Darker Blue */
+            --color-primary-blue-light: #E6F0FF; /* Adjusted Light Blue */
+            --color-accent-cyan: #00CED1;
+            --color-accent-cyan-dark: #00AFAF;
+            --color-accent-cyan-light: #E0FFFF;
+
+            --color-text-dark: #2D3748;
+            --color-text-light: #FFFFFF; /* White Text */
+            --color-bg-light: #F7FAFC;
+            --color-bg-dark: #1A202C;
+            --color-border-light: #E2E8F0;
+            --color-border-dark: #4A5568;
+            --color-substep-bg-light: #FFFFFF;
+            --color-substep-text-light: #4A5568; /* gray-600 */
+        }
+
+        .dark {
+            --color-primary-yellow: #FFD700;
+            --color-primary-yellow-light: #4A3A00;
+            --color-primary-blue: #3B82F6; /* Brighter blue for text on dark */
+            --color-primary-blue-light: #1E3A8A; /* Dark blue bg */
+            --color-accent-cyan: #2DD4BF; /* Brighter cyan for text on dark */
+            --color-accent-cyan-dark: #2DD4BF;
+            --color-accent-cyan-light: #042F2E; /* Dark cyan bg */
+
+            --color-text-dark: #E2E8F0; /* Light gray text */
+            --color-text-light: #E2E8F0;
+            --color-bg-light: #1A202C;
+            --color-bg-dark: #1A202C;
+            --color-border-light: #4A5568;
+            --color-border-dark: #4A5568;
+            --color-substep-bg-light: #2D3748;
+            --color-substep-text-light: #A0AEC0;
+        }
+
+        /* --- Base Styles --- */
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--color-bg-light); color: var(--color-text-dark); transition: background-color 0.3s, color 0.3s; }
+
+        .workflow-stage {
+            border-radius: 0.5rem; padding: 1rem; text-align: center;
+            font-weight: 600;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-width: 2px; margin-bottom: 1rem; cursor: pointer;
+            transition: all 0.2s ease-in-out; min-height: 90px; /* Increased min-height */ display: flex; flex-direction: column; justify-content: center;
+        }
+        .workflow-stage:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+
+         /* Style for example data / code snippets */
+        .example-data {
+            font-family: monospace;
+            font-size: 0.8em;
+            text-align: left;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            background-color: rgba(0,0,0,0.03);
+            border-radius: 0.25rem;
+            border: 1px solid var(--color-border-light);
+            color: var(--color-text-dark);
+             white-space: pre-wrap;
+             word-break: break-word; /* Ensure long lines wrap */
+        }
+        .dark .example-data {
+             background-color: rgba(255,255,255,0.05);
+             border-color: var(--color-border-dark);
+             color: var(--color-text-light);
+        }
+
+        .sub-steps { display: none; margin: 0.5rem 0 1rem 1rem; padding: 1rem; border-left-width: 4px; background-color: var(--color-substep-bg-light); border-radius: 0 0.5rem 0.5rem 0; text-align: left; font-size: 0.9em; color: var(--color-substep-text-light); transition: background-color 0.3s, border-color 0.3s, color 0.3s;}
+
+        .sub-step-item { margin-bottom: 0.5rem; padding-left: 0.5rem; border-left: 2px solid var(--color-border-light); transition: border-color 0.3s; }
+        .sub-step-item strong { color: var(--color-primary-blue); transition: color 0.3s;} /* Blue emphasis */
+        .dark .sub-step-item strong { color: var(--color-primary-yellow); } /* Yellow on dark */
+
+        .arrow { font-size: 1.5rem; color: theme('colors.gray.400'); text-align: center; margin: -0.5rem 0 0.5rem 0; transition: color 0.3s;}
+        .dark .arrow { color: theme('colors.gray.600');}
+
+        /* --- Color Mapping --- */
+        .stage-yellow { background-color: var(--color-primary-yellow-light); border-color: var(--color-primary-yellow); color: var(--color-text-dark); }
+        .dark .stage-yellow { background-color: var(--color-primary-yellow-light); color: var(--color-primary-yellow); }
+        .border-yellow-border { border-left-color: var(--color-primary-yellow); }
+
+        .stage-blue { background-color: var(--color-primary-blue); border-color: var(--color-primary-blue); color: var(--color-text-light); }
+        .dark .stage-blue { background-color: var(--color-primary-blue-light); color: var(--color-primary-blue); }
+        .border-blue-border { border-left-color: var(--color-primary-blue); }
+
+        .stage-cyan { background-color: var(--color-accent-cyan-light); border-color: var(--color-accent-cyan); color: var(--color-accent-cyan-dark); }
+        .dark .stage-cyan { background-color: var(--color-accent-cyan-light); color: var(--color-accent-cyan); }
+        .border-cyan-border { border-left-color: var(--color-accent-cyan); }
+
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Overall Title -->
+    <h1 class="text-3xl font-bold text-center mb-10 text-neutral-text-dark dark:text-neutral-text-light">
+        AI Course Navigator: Project Workflow
+    </h1>
+
+    <!-- Flex container for side-by-side layout on large screens -->
+    <div class="lg:flex lg:gap-12 max-w-7xl mx-auto">
+
+        <!-- Column 1: Conceptual Workflow -->
+        <div class="lg:w-1/2 mb-12 lg:mb-0">
+            <h2 class="text-2xl font-bold text-center mb-6 text-neutral-text-dark dark:text-neutral-text-light">Conceptual Workflow</h2>
+            <p class="text-center text-gray-600 dark:text-gray-400 mb-8 max-w-xl mx-auto text-sm">
+                From initial idea through data acquisition, AI analysis, and the final application's adaptive user flow. Click stages for details.
+            </p>
+            <div class="max-w-xl mx-auto">
+                <!-- Conceptual Stages 1-12 -->
+                <div class="workflow-stage stage-yellow" onclick="toggleSubSteps('subStepsC1')"><strong>1. Requirement & Problem Definition</strong><span class="text-xs mt-1">(Course discovery is difficult)</span></div><div id="subStepsC1" class="sub-steps border-yellow-border"><div class="sub-step-item"><strong>Goal:</strong> Define user need...</div><div class="sub-step-item"><strong>Problem:</strong> Info overload...</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-yellow" onclick="toggleSubSteps('subStepsC2')"><strong>2. Available Solutions & Challenges</strong><span class="text-xs mt-1">(Checking for APIs)</span></div><div id="subStepsC2" class="sub-steps border-yellow-border"><div class="sub-step-item"><strong>Research:</strong> Investigate APIs...</div><div class="sub-step-item"><strong>Finding:</strong> None suitable...</div><div class="sub-step-item"><strong>Challenge:</strong> Need alternative...</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-blue" onclick="toggleSubSteps('subStepsC3')"><strong>3. Alternative: Web Scraping Pipeline</strong><span class="text-xs mt-1">(Using Playwright)</span></div><div id="subStepsC3" class="sub-steps border-blue-border"><div class="sub-step-item"><strong>Decision:</strong> Web scrape...</div><div class="sub-step-item"><strong>Tool:</strong> Playwright...</div><div class="sub-step-item"><strong>Process:</strong> Extract fields...</div><div class="sub-step-item"><strong>Output:</strong> Raw data...</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-cyan" onclick="toggleSubSteps('subStepsC4')"><strong>4. Manual Curation & Level Grouping</strong><span class="text-xs mt-1">(Creating Initial Lists)</span></div><div id="subStepsC4" class="sub-steps border-cyan-border"><div class="sub-step-item"><strong>Action:</strong> Review & clean...</div><div class="sub-step-item"><strong>Grouping:</strong> Categorize levels...</div><div class="sub-step-item"><strong>Result:</strong> Initial lists...</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-cyan" onclick="toggleSubSteps('subStepsC5')"><strong>5. AI-Powered Analysis & Scoring</strong><span class="text-xs mt-1">(Conceptual: Using Gemini API)</span></div><div id="subStepsC5" class="sub-steps border-cyan-border"><div class="sub-step-item"><strong>Goal:</strong> Add scores, insights, tags...</div><div class="sub-step-item"><strong>Method:</strong> Process via LLM...</div><div class="sub-step-item"><strong>Prompting:</strong> Ask LLM for `analytics` object...</div><div class="sub-step-item"><strong>Output:</strong> Enriched data...</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-cyan" onclick="toggleSubSteps('subStepsC6')"><strong>6. Comparison & Final JSON Generation</strong><span class="text-xs mt-1">(Creating App's Data Source)</span></div><div id="subStepsC6" class="sub-steps border-cyan-border"><div class="sub-step-item"><strong>Review:</strong> Compare AI vs manual...</div><div class="sub-step-item"><strong>Consolidate:</strong> Combine data + `analytics`...</div><div class="sub-step-item"><strong>Output:</strong> Final JSON files...</div></div><div class="arrow">↓</div>
+                <p class="text-center text-xs font-semibold my-2 text-gray-500 dark:text-gray-400 uppercase">(--- Application ---)</p><div class="arrow">↓</div>
+                <div class="workflow-stage stage-yellow" onclick="toggleSubSteps('subStepsC7')"><strong>7. User Input Collection (Wiz 1-4)</strong><span class="text-xs mt-1">(Prefs & Stated Level)</span></div><div id="subStepsC7" class="sub-steps border-yellow-border"><div class="sub-step-item"><strong>UI:</strong> Selection screens...</div><div class="sub-step-item"><strong>Goal:</strong> Gather preferences...</div><div class="sub-step-item"><strong>State:</strong> Store selections...</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-yellow" onclick="toggleSubSteps('subStepsC8')"><strong>8. Adaptive Assessment (Wiz 5)</strong><span class="text-xs mt-1">(Diagnose Level & Gaps)</span></div><div id="subStepsC8" class="sub-steps border-yellow-border"><div class="sub-step-item"><strong>Engine:</strong> Adaptive logic...</div><div class="sub-step-item"><strong>Process:</strong> ~15 Qs, adapt path...</div><div class="sub-step-item"><strong>Output:</strong> `UserProfile`...</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-blue" onclick="toggleSubSteps('subStepsC9')"><strong>9. Generate Recommendations (Logic)</strong><span class="text-xs mt-1">(Combine Profile + JSON Data)</span></div><div id="subStepsC9" class="sub-steps border-blue-border"><div class="sub-step-item"><strong>Action:</strong> Post-quiz...</div><div class="sub-step-item"><strong>Select Data:</strong> Load JSON...</div><div class="sub-step-item"><strong>Filter:</strong> Match Weakness/Interest...</div><div class="sub-step-item"><strong>Sort:</strong> Use score...</div><div class="sub-step-item"><strong>Result:</strong> Top 3...</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-blue" onclick="toggleSubSteps('subStepsC10')"><strong>10. Display Results (Wiz 6 UI)</strong><span class="text-xs mt-1">(Show Profile & Top 3)</span></div><div id="subStepsC10" class="sub-steps border-blue-border"><div class="sub-step-item"><strong>UI:</strong> Render `Step6_Results`...</div><div class="sub-step-item"><strong>Content:</strong> Level, score, analysis, cards...</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-blue" onclick="toggleSubSteps('subStepsC11')"><strong>11. Initialize Explorer (Logic)</strong><span class="text-xs mt-1">(Pre-filter & Pre-sort)</span></div><div id="subStepsC11" class="sub-steps border-blue-border"><div class="sub-step-item"><strong>Action:</strong> Navigate...</div><div class="sub-step-item"><strong>Load Data:</strong> Full list...</div><div class="sub-step-item"><strong>Set State:</strong> Pre-apply filters...</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-blue" onclick="toggleSubSteps('subStepsC12')"><strong>12. Display Explorer (Wiz 7 UI)</strong><span class="text-xs mt-1">(Interactive Browser)</span></div><div id="subStepsC12" class="sub-steps border-blue-border"><div class="sub-step-item"><strong>UI:</strong> Render `Explorer`...</div><div class="sub-step-item"><strong>User Sees:</strong> Pre-tailored explorer...</div></div>
+            </div>
+        </div>
+
+        <!-- Column 2: Technical Implementation Details -->
+        <div class="lg:w-1/2">
+             <h2 class="text-2xl font-bold text-center mb-6 text-neutral-text-dark dark:text-neutral-text-light">Technical Implementation</h2>
+             <p class="text-center text-gray-600 dark:text-gray-400 mb-8 max-w-xl mx-auto text-sm">
+                How each conceptual stage is realized in the code, with examples. Click stages for details.
+            </p>
+             <div class="max-w-xl mx-auto">
+                 <!-- Technical Stages 1-12 -->
+                <div class="workflow-stage stage-yellow" onclick="toggleSubSteps('subStepsT1')"><strong>1. Define Requirements</strong><span class="text-xs mt-1">(Project Goals)</span></div><div id="subStepsT1" class="sub-steps border-yellow-border"><div class="sub-step-item"><strong>Tech:</strong> Project brief, user stories.</div><div class="sub-step-item"><strong>Example:</strong> "As a user, I want personalized course recs..."</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-yellow" onclick="toggleSubSteps('subStepsT2')"><strong>2. API Research / Feasibility</strong><span class="text-xs mt-1">(Data Source Check)</span></div><div id="subStepsT2" class="sub-steps border-yellow-border"><div class="sub-step-item"><strong>Tech:</strong> API documentation review (e.g., Udemy API docs).</div><div class="sub-step-item"><strong>Result:</strong> Confirmed lack of suitable public API endpoints.</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-blue" onclick="toggleSubSteps('subStepsT3')"><strong>3. Playwright Scraper Script</strong><span class="text-xs mt-1">(Data Extraction)</span></div><div id="subStepsT3" class="sub-steps border-blue-border"><div class="sub-step-item"><strong>Tech:</strong> Node.js, Playwright library.</div><div class="sub-step-item"><strong>Logic:</strong> `page.goto()`, `page.waitForSelector()`, `page.$$eval()` to extract text/attributes.</div><div class="sub-step-item"><strong>Output:</strong> Script produces raw JSON arrays.</div><div class="example-data">// Example Playwright snippet
+await page.waitForSelector('.course-card');
+const courses = await page.$$eval('.course-card', cards => cards.map(c => ({
+  title: c.querySelector('.title')?.innerText,
+  // ... other selectors ...
+})));</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-cyan" onclick="toggleSubSteps('subStepsT4')"><strong>4. Initial JSON File Creation</strong><span class="text-xs mt-1">(Manual Grouping)</span></div><div id="subStepsT4" class="sub-steps border-cyan-border"><div class="sub-step-item"><strong>Tech:</strong> Manual review, text editor/scripting.</div><div class="sub-step-item"><strong>Process:</strong> Split raw JSON into `beginner_raw.json`, etc. Clean data inconsistencies.</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-cyan" onclick="toggleSubSteps('subStepsT5')"><strong>5. Gemini API Call Script</strong><span class="text-xs mt-1">(AI Analysis - Conceptual)</span></div><div id="subStepsT5" class="sub-steps border-cyan-border"><div class="sub-step-item"><strong>Tech:</strong> Node.js/Python script using Google AI SDK.</div><div class="sub-step-item"><strong>Logic:</strong> Loop through `beginner_raw.json`, construct prompt with `title`/`whatYoullLearn`, call `geminiModel.generateContent()`.</div><div class="sub-step-item"><strong>Prompt Design:</strong> Ask for JSON output with `relevance_score`, `insight`, `filter_tags`, `final_comparison_score`.</div><div class="sub-step-item"><strong>Parsing:</strong> Extract `analytics` JSON from Gemini response.</div><div class="example-data">// Example Gemini Prompt Fragment
+Analyze this course based on AI/ML topics...
+Return JSON: { "relevance_score": float, "insight": "...", ... }</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-cyan" onclick="toggleSubSteps('subStepsT6')"><strong>6. Final Data Assembly Script</strong><span class="text-xs mt-1">(Merge & Output Final JSONs)</span></div><div id="subStepsT6" class="sub-steps border-cyan-border"><div class="sub-step-item"><strong>Tech:</strong> Node.js/Python script.</div><div class="sub-step-item"><strong>Logic:</strong> Read `beginner_raw.json`, merge with corresponding AI `analytics` output.</div><div class="sub-step-item"><strong>Output:</strong> Write final `public/beginner_courses_courses.json`, etc.</div></div><div class="arrow">↓</div>
+                 <p class="text-center text-xs font-semibold my-2 text-gray-500 dark:text-gray-400 uppercase">(--- React App ---)</p><div class="arrow">↓</div>
+                <div class="workflow-stage stage-yellow" onclick="toggleSubSteps('subStepsT7')"><strong>7. User Input Components (React)</strong><span class="text-xs mt-1">(Wiz 1-4: `StepX_*.jsx`)</span></div><div id="subStepsT7" class="sub-steps border-yellow-border"><div class="sub-step-item"><strong>Tech:</strong> React `useState`, `useLocalStorage`, `SelectionCard.jsx`.</div><div class="sub-step-item"><strong>Logic:</strong> `onChange` handlers update `selections` state in `Home.jsx`.</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-yellow" onclick="toggleSubSteps('subStepsT8')"><strong>8. Adaptive Engine (React)</strong><span class="text-xs mt-1">(Wiz 5: `Step5_*.jsx`, `assessmentLogic.js`)</span></div><div id="subStepsT8" class="sub-steps border-yellow-border"><div class="sub-step-item"><strong>Data Loading:</strong> `useEffect` in `Home.jsx` calls `loadAssessmentQuestions`.</div><div class="sub-step-item"><strong>Pre-processing:</strong> `preprocessQuestionBank` creates `questionPool` map.</div><div class="sub-step-item"><strong>State:</strong> `userProfile` state in `Home.jsx`.</div><div class="sub-step-item"><strong>Core Logic:</strong> `selectNextQuestion` (uses pool, `tagLevels`), `updateProfile` (adjusts `tagLevels`, checks pivot).</div><div class="sub-step-item"><strong>Grading:</strong> Compare answers for MCQ/MCMS. (Written scoring excluded).</div><div class="example-data">// Get next question
+let q = questionPool[tag][level].pop();
+// Update level on correct
+userProfile.tagLevels[tag] = Math.min(10, currentLevel + 2);</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-blue" onclick="toggleSubSteps('subStepsT9')"><strong>9. Recommendation Function (JS)</strong><span class="text-xs mt-1">(`assessmentLogic.js`)</span></div><div id="subStepsT9" class="sub-steps border-blue-border"><div class="sub-step-item"><strong>Function:</strong> `generateRecommendations(profile, allCourses, userTopics)`.</div><div class="sub-step-item"><strong>Logic:</strong> Filters `allCourses` based on `profile.level`, then by `profile.weakness/interestTags` using `course.analytics.filter_tags`. Sorts by `course.analytics.final_comparison_score`.</div><div class="sub-step-item"><strong>Returns:</strong> Array of top 3 course objects.</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-blue" onclick="toggleSubSteps('subStepsT10')"><strong>10. Results Component (React)</strong><span class="text-xs mt-1">(Wiz 6: `Step6_Results.jsx`)</span></div><div id="subStepsT10" class="sub-steps border-blue-border"><div class="sub-step-item"><strong>Props:</strong> Receives `assessmentResults` (final profile), `allCourses`.</div><div class="sub-step-item"><strong>Render:</strong> Calls `generateRecommendations`, maps results to `RecommendationCard.jsx`, renders `DomainAnalysis.jsx`.</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-blue" onclick="toggleSubSteps('subStepsT11')"><strong>11. Explorer Initialization (React)</strong><span class="text-xs mt-1">(Logic in `Explorer.jsx`)</span></div><div id="subStepsT11" class="sub-steps border-blue-border"><div class="sub-step-item"><strong>Trigger:</strong> Navigation to Step 7.</div><div class="sub-step-item"><strong>Logic:</strong> `useEffect` hook calls `initializeExplorer` (loads data if needed, gets tags). Sets `activeFilters` state based on `assessmentResults` (level, weakness/interest tags). Sets default sort.</div><div class="example-data">useEffect(() => {
+  const initialFilters = { ...defaultFilters };
+  if (results) {
+    initialFilters.level = results.level;
+    initialFilters.topic = new Set(results.weaknessTags || results.interestTags || []);
+  }
+  setActiveFilters(initialFilters);
+}, [results]);</div></div><div class="arrow">↓</div>
+                <div class="workflow-stage stage-blue" onclick="toggleSubSteps('subStepsT12')"><strong>12. Explorer Component (React)</strong><span class="text-xs mt-1">(Wiz 7: `Explorer.jsx`)</span></div><div id="subStepsT12" class="sub-steps border-blue-border"><div class="sub-step-item"><strong>Props:</strong> Receives `allCourses`.</div><div class="sub-step-item"><strong>State:</strong> Manages `activeFilters`, `filteredCourses`.</div><div class="sub-step-item"><strong>Render:</strong> Renders `Header`, `FilterControls`, `ActiveFilters`, `CourseGrid`. `useEffect` calls `applyFilters` when `activeFilters` change.</div></div>
+             </div>
+        </div>
+
+    </div>
+
+    <!-- Toggle Dark Mode Button -->
+    <div class="text-center mt-12 mb-4">
+         <button onclick="document.documentElement.classList.toggle('dark')" class="px-4 py-2 bg-[var(--color-primary-blue)] text-[var(--color-text-light)] rounded-md hover:bg-[var(--color-primary-blue-dark)] dark:bg-[var(--color-primary-yellow)] dark:text-[var(--color-text-dark)] dark:hover:bg-[var(--color-primary-yellow-dark)] transition-colors">Toggle Theme</button>
+     </div>
+
+    <script>
+        function toggleSubSteps(id) {
+            const element = document.getElementById(id);
+            if (element) {
+                const isVisible = element.style.display === 'block';
+                // Close all *other* sub-steps before opening/closing this one
+                document.querySelectorAll('.sub-steps').forEach(el => {
+                   if(el.id !== id) el.style.display = 'none';
+                });
+                // Toggle the clicked one
+                element.style.display = isVisible ? 'none' : 'block';
+                 // Scroll into view if opened
+                 if (!isVisible) {
+                     setTimeout(() => { // Timeout allows display change to register
+                        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                     }, 0);
+                 }
+            }
+        }
+    </script>
+
+</body>
+</html>
+

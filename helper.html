@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quality Agent 🤖 Dashboard</title>
+    <!-- Import Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Monaco Editor script REMOVED from here -->
+    <!-- Import a font and icons for a modern feel -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Use the Inter font as the default */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4a5568; /* gray-600 */
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2d3748; /* gray-800 */
+        }
+
+        /* Style for the generated code blocks */
+        pre[class*="language-"] {
+            padding: 1rem;
+            margin: 0;
+            overflow: auto;
+            border-radius: 0.375rem; /* rounded-md */
+            background: #0D1117; /* A dark github-like color */
+            color: #C9D1D9;
+            font-size: 0.875rem; /* text-sm */
+        }
+        
+        .token.comment { color: #8B949E; }
+        .token.punctuation { color: #C9D1D9; }
+        .token.property, .token.tag, .token.boolean, .token.number, .token.constant, .token.symbol { color: #79C0FF; }
+        .token.selector, .token.attr-name, .token.string, .token.char, .token.builtin, .token.inserted { color: #A5D6FF; }
+        .token.operator, .token.entity, .token.url, .language-css .token.string, .style .token.string { color: #FF7B72; }
+        .token.atrule, .token.attr-value, .token.keyword { color: #FF7B72; }
+        .token.function, .token.class-name { color: #FFA657; }
+        .token.regex, .token.important, .token.variable { color: #FFA657; }
+
+        /* Style for the dummy Excel table */
+        .excel-table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 0.8rem;
+            border: 1px solid #4a5568; /* gray-600 */
+        }
+        .excel-table th, .excel-table td {
+            border: 1px solid #4a5568; /* gray-600 */
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+        }
+        .excel-table th {
+            background-color: #2d3748; /* gray-800 */
+            font-weight: 600;
+        }
+        .excel-table tr:nth-child(even) {
+            background-color: #1a202c; /* gray-900 */
+        }
+        .excel-table tr:hover {
+            background-color: #2b3546;
+        }
+
+        /* Container for the Monaco editor */
+        .editor-container {
+            width: 100%;
+            height: 30rem; /* 480px */
+            border-radius: 0.375rem; /* rounded-md */
+            overflow: hidden;
+            border: 1px solid #4a5568; /* gray-600 */
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex flex-col lg:flex-row h-screen overflow-hidden">
+
+    <!-- =================================== -->
+    <!-- COLUMN 1: Context (User Stories)    -->
+    <!-- =================================== -->
+    <aside class="w-full lg:w-1/4 xl:w-1/5 bg-gray-800 p-4 overflow-y-auto border-r border-gray-700">
+        <h2 class="text-xl font-bold mb-4 flex items-center">
+            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            Azure DevOps
+        </h2>
+        <div class="space-y-2" id="story-list">
+            <!-- Dummy User Stories will be injected here by JS -->
+        </div>
+    </aside>
+
+    <!-- =================================== -->
+    <!-- COLUMN 2: QA-Agent Workflow         -->
+    <!-- =================================== -->
+    <main class="w-full lg:w-1/2 xl:w-3/5 p-6 overflow-y-auto relative">
+        <header class="mb-6">
+            <h1 class="text-3xl font-bold text-white">Quality Agent <span class="text-blue-400">🤖</span></h1>
+            <p class="text-lg text-gray-400">Your context-aware partner for generating test assets.</p>
+        </header>
+
+        <!-- Step 1: Mode Selector -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-300 mb-2">Select Agent Mode</label>
+            <div class="relative flex w-full max-w-sm p-1 bg-gray-700 rounded-lg">
+                <button id="mode-helper" onclick="setMode('Helper')" class="w-1/2 py-2 px-4 rounded-md text-sm font-medium text-gray-300 transition-all">
+                    Mode: Helper
+                </button>
+                <button id="mode-agent" onclick="setMode('Agent')" class="w-1/2 py-2 px-4 rounded-md text-sm font-medium text-white bg-blue-600 transition-all">
+                    Mode: Agent
+                </button>
+            </div>
+            <p id="mode-description" class="text-xs text-gray-400 mt-2">
+                <strong class="text-blue-400">Agent Mode:</strong> Direct API integration. Generates final assets automatically.
+            </p>
+        </div>
+
+        <!-- Step 2: Selected Story Details -->
+        <div id="story-details-container" class="bg-gray-800 p-6 rounded-lg shadow-lg hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold text-white" id="story-title"></h3>
+                <span class="text-xs font-medium bg-blue-900 text-blue-300 py-1 px-3 rounded-full" id="story-id"></span>
+            </div>
+            <p class="text-gray-300 mb-4" id="story-description"></p>
+            <h4 class="font-semibold text-gray-200 mb-2">Acceptance Criteria</h4>
+            <ul class="list-disc list-inside text-gray-400 space-y-1" id="story-ac"></ul>
+
+            <!-- Step 3: Action Buttons -->
+            <div class="border-t border-gray-700 mt-6 pt-6 flex flex-col sm:flex-row flex-wrap gap-4">
+                <button onclick="generate('manual')" id="btn-manual" class="flex-1 min-w-[200px] bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-colors duration-200">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Generate Manual Test Report
+                </button>
+                <button onclick="generate('playwright')" id="btn-playwright" class="flex-1 min-w-[200px] bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-colors duration-200">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                    Generate Playwright Script
+                </button>
+                <button onclick="generate('cdp')" id="btn-cdp" class="flex-1 min-w-[200px] bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-colors duration-200">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101"></path></svg>
+                    Generate CDP Debug Script
+                </button>
+            </div>
+        </div>
+        
+        <!-- Initial Welcome Message -->
+        <div id="welcome-message" class="text-center text-gray-500 mt-20">
+            <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            <h2 class="text-2xl font-semibold">Welcome to the Quality Agent</h2>
+            <p class="text-lg">Please select a User Story from the left panel to begin.</p>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading-spinner" class="absolute inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center backdrop-blur-sm hidden z-50">
+            <div class="flex flex-col items-center">
+                <svg class="animate-spin h-12 w-12 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="text-white text-lg font-semibold mt-4">Agent is thinking...</p>
+                <p class="text-gray-300" id="loading-message">Generating context-aware assets...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- =================================== -->
+    <!-- COLUMN 3: Output Panel (Asset)      -->
+    <!-- =================================== -->
+    <aside id="output-panel" class="w-full lg:w-1/3 xl:w-2/5 bg-gray-800 p-6 overflow-y-auto border-l border-gray-700 hidden">
+        <h2 class="text-2xl font-bold mb-4" id="output-title">Generated Asset</h2>
+        
+        <!-- Tabs for Agent Mode -->
+        <div id="agent-tabs" class="mb-4">
+            <div class="border-b border-gray-700">
+                <nav class="-mb-px flex space-x-4" aria-label="Tabs">
+                    <button onclick="showTab('asset')" id="tab-asset" class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-400">
+                        Generated Asset
+                    </button>
+                    <button onclick="showTab('prompt')" id="tab-prompt" class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-500">
+                        Master Prompt (Under the Hood)
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Output for Helper Mode -->
+        <div id="helper-output" class="space-y-4">
+            <h3 class="text-lg font-semibold text-blue-400">Step 1: Edit "Master Prompt"</h3>
+            <p class="text-sm text-gray-300">The helper has generated this prompt. You can edit it before running.</p>
+            <div class="relative">
+                <!-- Monaco Editor container for Helper -->
+                <div id="helper-prompt-editor-container" class="editor-container"></div>
+                <button onclick="copyEditorToClipboard('helper')" class="absolute top-2 right-2 bg-gray-900 bg-opacity-75 hover:bg-gray-700 text-gray-300 p-1.5 rounded-md z-10">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                </button>
+            </div>
+
+            <!-- New button to run the edited prompt -->
+            <button id="helper-run-prompt-btn" onclick="runHelperPrompt()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-colors duration-200">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Run Prompt (Simulation)
+            </button>
+            
+            <div id="helper-step-2-divider" class="hidden">
+                <div class="border-t border-gray-700 my-4"></div>
+                <h3 class="text-lg font-semibold text-green-400">Final Asset (from your prompt)</h3>
+            </div>
+            
+            <div id="helper-asset-content">
+                <!-- Helper asset appears here after clicking "Run" -->
+            </div>
+        </div>
+
+        <!-- Output for Agent Mode -->
+        <div id="agent-output" class="space-y-4">
+            <!-- Tab Panel: Asset -->
+            <div id="panel-asset">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-semibold text-green-400">Generation Complete!</h3>
+                    <button id="download-button" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-3 rounded-md text-sm flex items-center">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Download Asset
+                    </button>
+                </div>
+                <div id="agent-asset-content">
+                    <!-- Agent asset appears here -->
+                </div>
+            </div>
+            <!-- Tab Panel: Prompt -->
+            <div id="panel-prompt" class="hidden">
+                <p class="text-sm text-gray-300 mb-2">The Agent used this "Master Prompt" to generate the asset directly via API. You can review or edit it for your own use.</p>
+                <div class="relative">
+                    <!-- Monaco Editor container for Agent -->
+                    <div id="agent-prompt-editor-container" class="editor-container"></div>
+                    <button onclick="copyEditorToClipboard('agent')" class="absolute top-2 right-2 bg-gray-900 bg-opacity-75 hover:bg-gray-700 text-gray-300 p-1.5 rounded-md z-10">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Toast Notification for Copy -->
+        <div id="toast" class="fixed bottom-6 right-6 bg-green-600 text-white py-2 px-4 rounded-lg shadow-lg transition-all opacity-0 translate-y-2">
+            Copied to clipboard!
+        </div>
+
+    </aside>
+
+    <script>
+        // --- DUMMY DATA ---
+        const dummyData = [
+            {
+                id: 123,
+                title: "User Login Functionality",
+                description: "As a user, I want to be able to log in to the application with my email and password so that I can access my personal dashboard.",
+                acceptanceCriteria: [
+                    "Given I am on the login page.",
+                    "When I enter valid credentials (user@test.com / Pass123!).",
+                    "Then I should be redirected to my dashboard.",
+                    "When I enter an invalid password.",
+                    "Then I should see an 'Invalid credentials' error message.",
+                    "When I leave the email field blank.",
+                    "Then the 'Login' button should be disabled."
+                ],
+                selectors: {
+                    username: "#user-name",
+                    password: "#password",
+                    submitBtn: "#login-button",
+                    errorMessage: "[data-test='error']"
+                }
+            },
+            {
+                id: 456,
+                title: "Password Reset Flow",
+                description: "As a user, I want to be able to reset my password if I have forgotten it, so that I can regain access to my account.",
+                acceptanceCriteria: [
+                    "Given I am on the login page and I click 'Forgot Password'.",
+                    "When I am on the 'Reset Password' page and I enter a valid, registered email.",
+                    "Then I should see a success message 'Password reset link sent'.",
+                    "When I enter an invalid or unregistered email.",
+                    "Then I should see an error message 'Email not found'."
+                ],
+                selectors: {
+                    forgotPassLink: "a.forgot-password",
+                    emailInput: "#reset-email-input",
+                    submitResetBtn: "#submit-reset",
+                    successMessage: ".alert-success"
+                }
+            },
+            {
+                id: 789,
+                title: "Add Item to Shopping Cart",
+                description: "As a logged-in user, I want to add an item to my shopping cart from the product details page.",
+                acceptanceCriteria: [
+                    "Given I am logged in and on a product details page.",
+                    "When I click the 'Add to Cart' button.",
+                    "Then the cart icon in the header should update with a '1'.",
+                    "And a success toast 'Item added to cart' should appear."
+                ],
+                selectors: {
+                    addToCartBtn: ".btn-add-to-cart",
+                    cartIconBadge: ".header-cart-badge",
+                    successToast: ".toast-success"
+                }
+            }
+        ];
+
+        // --- APPLICATION STATE ---
+        let appState = {
+            selectedStoryId: null,
+            currentMode: 'Agent', // 'Agent' or 'Helper'
+            currentTask: null, // 'manual', 'playwright', or 'cdp'
+            generatedPrompt: '',
+            generatedAsset: '',
+            helperEditor: null,
+            agentEditor: null,
+        };
+
+        // --- DOM ELEMENTS ---
+        const storyList = document.getElementById('story-list');
+        const welcomeMessage = document.getElementById('welcome-message');
+        const storyDetailsContainer = document.getElementById('story-details-container');
+        const storyTitle = document.getElementById('story-title');
+        const storyId = document.getElementById('story-id');
+        const storyDescription = document.getElementById('story-description');
+        const storyAC = document.getElementById('story-ac');
+        const outputPanel = document.getElementById('output-panel');
+        const outputTitle = document.getElementById('output-title');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const loadingMessage = document.getElementById('loading-message');
+        const modeHelperBtn = document.getElementById('mode-helper');
+        const modeAgentBtn = document.getElementById('mode-agent');
+        const modeDescription = document.getElementById('mode-description');
+        
+        const helperOutput = document.getElementById('helper-output');
+        const helperAssetContent = document.getElementById('helper-asset-content');
+        const helperStep2Divider = document.getElementById('helper-step-2-divider');
+
+        const agentOutput = document.getElementById('agent-output');
+        const agentTabs = document.getElementById('agent-tabs');
+        const agentAssetContent = document.getElementById('agent-asset-content');
+        const downloadButton = document.getElementById('download-button');
+        
+        const panelAsset = document.getElementById('panel-asset');
+        const panelPrompt = document.getElementById('panel-prompt');
+        const tabAsset = document.getElementById('tab-asset');
+        const tabPrompt = document.getElementById('tab-prompt');
+        const toast = document.getElementById('toast');
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserStories();
+            initEditors(); // Call initEditors on DOMContentLoaded
+        });
+
+        function loadUserStories() {
+            dummyData.forEach(story => {
+                const storyElement = document.createElement('div');
+                storyElement.className = 'bg-gray-700 p-4 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors duration-200';
+                storyElement.setAttribute('data-story-id', story.id);
+                storyElement.onclick = () => selectStory(story.id);
+                storyElement.innerHTML = `
+                    <div class="flex justify-between items-center mb-1">
+                        <h4 class="font-semibold text-white truncate">${story.title}</h4>
+                        <span class="text-xs text-gray-400">ID: ${story.id}</span>
+                    </div>
+                    <p class="text-sm text-gray-400 line-clamp-2">${story.description}</p>
+                `;
+                storyList.appendChild(storyElement);
+            });
+        }
+
+        function initEditors(retryCount = 0) {
+            // Check if the monaco object is now available
+            if (typeof window.monaco === 'undefined' || typeof window.monaco.editor === 'undefined') {
+                if (retryCount < 50) { // Try for 5 seconds (50 * 100ms)
+                    // If not, wait and try again
+                    setTimeout(() => initEditors(retryCount + 1), 100);
+                } else {
+                    console.error("Monaco Editor failed to initialize 'window.monaco'.");
+                }
+                return;
+            }
+
+            // Configure common editor options
+            const editorOptions = {
+                language: 'markdown',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: { enabled: false },
+                wordWrap: 'on',
+                fontSize: 14,
+                lineNumbers: 'on',
+                roundedSelection: false,
+                scrollBeyondLastLine: false,
+                readOnly: false,
+            };
+
+            // Initialize Helper Editor
+            const helperEditorContainer = document.getElementById('helper-prompt-editor-container');
+            if (helperEditorContainer && !appState.helperEditor) { // Check if not already initialized
+                appState.helperEditor = window.monaco.editor.create(helperEditorContainer, editorOptions);
+            }
+
+            // Initialize Agent Editor
+            const agentEditorContainer = document.getElementById('agent-prompt-editor-container');
+            if (agentEditorContainer && !appState.agentEditor) { // Check if not already initialized
+                appState.agentEditor = window.monaco.editor.create(agentEditorContainer, editorOptions);
+            }
+        }
+
+        // --- STATE & WORKFLOW FUNCTIONS ---
+
+        function selectStory(id) {
+            appState.selectedStoryId = id;
+            const story = dummyData.find(s => s.id === id);
+
+            // Update story list UI
+            Array.from(storyList.children).forEach(child => {
+                child.classList.remove('bg-blue-600', 'hover:bg-blue-600');
+                child.classList.add('bg-gray-700', 'hover:bg-gray-600');
+                if (parseInt(child.getAttribute('data-story-id')) === id) {
+                    child.classList.add('bg-blue-600', 'hover:bg-blue-600');
+                    child.classList.remove('bg-gray-700', 'hover:bg-gray-600');
+                }
+            });
+
+            // Populate main panel
+            storyTitle.textContent = story.title;
+            storyId.textContent = `ID: ${story.id}`;
+            storyDescription.textContent = story.description;
+            storyAC.innerHTML = story.acceptanceCriteria.map(ac => `<li>${ac}</li>`).join('');
+
+            welcomeMessage.classList.add('hidden');
+            storyDetailsContainer.classList.remove('hidden');
+            outputPanel.classList.add('hidden');
+        }
+
+        function setMode(mode) {
+            appState.currentMode = mode;
+            if (mode === 'Agent') {
+                modeAgentBtn.classList.add('bg-blue-600', 'text-white');
+                modeAgentBtn.classList.remove('text-gray-300');
+                modeHelperBtn.classList.remove('bg-blue-600', 'text-white');
+                modeHelperBtn.classList.add('text-gray-300');
+                modeDescription.innerHTML = '<strong class="text-blue-400">Agent Mode:</strong> Direct API integration. Generates final assets automatically.';
+            } else {
+                modeHelperBtn.classList.add('bg-blue-600', 'text-white');
+                modeHelperBtn.classList.remove('text-gray-300');
+                modeAgentBtn.classList.remove('bg-blue-600', 'text-white');
+                modeAgentBtn.classList.add('text-gray-300');
+                modeDescription.innerHTML = '<strong class="text-yellow-400">Helper Mode:</strong> Generates a "Master Prompt" for you to edit and run.';
+            }
+            // If an asset is already generated, re-render the output panel
+            if (outputPanel.classList.contains('hidden') === false) {
+                renderOutput();
+            }
+        }
+
+        function generate(taskType) {
+            if (!appState.selectedStoryId) return;
+
+            appState.currentTask = taskType;
+            const story = dummyData.find(s => s.id === appState.selectedStoryId);
+
+            loadingMessage.textContent = "Generating context-aware assets...";
+            loadingSpinner.classList.remove('hidden');
+
+            // Simulate AI generation time
+            setTimeout(() => {
+                // 1. Generate the Master Prompt
+                appState.generatedPrompt = generateMasterPrompt(story, taskType);
+                
+                // 2. Generate the Final Asset (for Agent mode or default Helper view)
+                appState.generatedAsset = generateFinalAsset(story, taskType);
+                
+                // 3. Render the output
+                renderOutput();
+                
+                loadingSpinner.classList.add('hidden');
+            }, 1500);
+        }
+
+        function renderOutput() {
+            outputPanel.classList.remove('hidden');
+            const story = dummyData.find(s => s.id === appState.selectedStoryId);
+            
+            const assetName = appState.currentTask === 'manual' ? '.xlsx Test Report' 
+                            : appState.currentTask === 'playwright' ? 'Playwright Script'
+                            : 'CDP Debug Script';
+            outputTitle.textContent = `${story.title} - ${assetName}`;
+            
+            const lang = appState.currentTask === 'playwright' || appState.currentTask === 'cdp' ? 'typescript' : 'markdown';
+
+            if (appState.currentMode === 'Agent') {
+                agentOutput.classList.remove('hidden');
+                agentTabs.classList.remove('hidden');
+                helperOutput.classList.add('hidden');
+                
+                // Set content
+                if (appState.agentEditor) {
+                    window.monaco.editor.setModelLanguage(appState.agentEditor.getModel(), lang);
+                    appState.agentEditor.setValue(appState.generatedPrompt);
+                }
+                agentAssetContent.innerHTML = appState.generatedAsset;
+                
+                // Set download button text
+                const fileExt = appState.currentTask === 'manual' ? 'xlsx' 
+                                : appState.currentTask === 'playwright' ? 'zip'
+                                : 'ts';
+                downloadButton.textContent = `Download .${fileExt}`;
+
+                // Reset tabs to default
+                showTab('asset');
+
+            } else { // Helper Mode
+                agentOutput.classList.add('hidden');
+                agentTabs.classList.add('hidden');
+                helperOutput.classList.remove('hidden');
+
+                // Set content
+                if (appState.helperEditor) {
+                    window.monaco.editor.setModelLanguage(appState.helperEditor.getModel(), lang);
+                    appState.helperEditor.setValue(appState.generatedPrompt);
+                    // Force layout update for the editor
+                    setTimeout(() => {
+                        if (appState.helperEditor) appState.helperEditor.layout();
+                    }, 50);
+                }
+                
+                // Clear previous "run" results
+                helperAssetContent.innerHTML = '';
+                helperStep2Divider.classList.add('hidden');
+            }
+        }
+        
+        function runHelperPrompt() {
+            // This function simulates "running" the prompt in the helper editor
+            loadingMessage.textContent = "Simulating AI response to your prompt...";
+            loadingSpinner.classList.remove('hidden');
+            
+            // In a real app, you'd get the prompt:
+            // const editedPrompt = appState.helperEditor.getValue();
+            // And send it to an AI.
+            // For this demo, we just regenerate the asset.
+            
+            const story = dummyData.find(s => s.id === appState.selectedStoryId);
+            appState.generatedAsset = generateFinalAsset(story, appState.currentTask);
+
+            setTimeout(() => {
+                helperAssetContent.innerHTML = appState.generatedAsset;
+                helperStep2Divider.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+            }, 1000);
+        }
+
+        function showTab(tabName) {
+            if (tabName === 'asset') {
+                panelAsset.classList.remove('hidden');
+                panelPrompt.classList.add('hidden');
+                tabAsset.classList.add('border-blue-500', 'text-blue-400');
+                tabAsset.classList.remove('border-transparent', 'text-gray-400', 'hover:text-gray-300', 'hover:border-gray-500');
+                tabPrompt.classList.add('border-transparent', 'text-gray-400', 'hover:text-gray-300', 'hover:border-gray-500');
+                tabPrompt.classList.remove('border-blue-500', 'text-blue-400');
+            } else {
+                panelAsset.classList.add('hidden');
+                panelPrompt.classList.remove('hidden');
+                tabPrompt.classList.add('border-blue-500', 'text-blue-400');
+                tabPrompt.classList.remove('border-transparent', 'text-gray-400', 'hover:text-gray-300', 'hover:border-gray-500');
+                tabAsset.classList.add('border-transparent', 'text-gray-400', 'hover:text-gray-3G00', 'hover:border-gray-500');
+                tabAsset.classList.remove('border-blue-500', 'text-blue-400');
+                
+                // Crucial: Refresh editor layout when tab becomes visible
+                if (appState.agentEditor) {
+                    setTimeout(() => {
+                         if (appState.agentEditor) appState.agentEditor.layout();
+                    }, 50);
+                }
+            }
+        }
+
+        // --- CONTENT GENERATION FUNCTIONS ---
+
+        function generateMasterPrompt(story, taskType) {
+            if (taskType === 'manual') {
+                return `
+Generate a full set of functional test cases for the following user story.
+The output MUST be a single, markdown-formatted table with columns: "ID", "Feature", "Scenario", "Steps", "Expected Result".
+Do not include any other text, preambles, or summaries.
+
+--- USER STORY ---
+ID: ${story.id}
+Title: ${story.title}
+Description: ${story.description}
+Acceptance Criteria:
+${story.acceptanceCriteria.map(ac => `- ${ac}`).join('\n')}
+`;
+            }
+
+            if (taskType === 'playwright') {
+                return `
+Generate a Playwright test automation script based on the following context.
+You MUST adhere to all best practices, including Page Object Model (POM).
+Generate two separate code blocks: one for the Page Object file and one for the Spec file.
+
+--- CONTEXT ---
+User Story: ${story.title}
+File Names:
+  - Page Object: ${story.title.split(' ')[0].toLowerCase()}.page.ts
+  - Spec File: ${story.title.split(' ')[0].toLowerCase()}.spec.ts
+Selectors (Object Info):
+${Object.entries(story.selectors).map(([name, selector]) => `  - ${name}: "${selector}"`).join('\n')}
+
+--- RULES ---
+1.  **Page Object Class (e.g., LoginPage)**:
+    -   Must have a 'readonly page: Page' property.
+    -   Must have a constructor that accepts 'page: Page'.
+    -   Must have getter methods for each selector (e.g., 'get ${Object.keys(story.selectors)[0]}() { return this.page.locator('${Object.values(story.selectors)[0]}'); }').
+    -   Must have action methods for logic (e.g., 'async login(user, pass)', 'async navigateTo()').
+2.  **Spec File**:
+    -   Must import the Page Object class.
+    -   Must use 'test.beforeEach()' to initialize the page object and navigate.
+    -   Must use web-first assertions (e.g., 'await expect(page.locator(...)).toBeVisible()').
+    -   DO NOT use 'page.waitForTimeout()'.
+`;
+            }
+
+            if (taskType === 'cdp') {
+                return `
+Generate a Playwright "connect over CDP" debug script for the following user story.
+This script is for debugging and will connect to an *existing* browser session,
+bypassing the need to log in.
+
+--- PRE-REQUISITES (User must do this manually) ---
+1.  Close all instances of your browser (e.g., Chrome).
+2.  Launch the browser from your command line with the remote debugging port enabled.
+    Example for Chrome on Windows:
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --remote-debugging-port=9222
+    Example for Chrome on macOS:
+    /Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --remote-debugging-port=9222
+3.  Manually log in to your application in that browser.
+
+--- SCRIPT REQUIREMENTS ---
+1.  Use 'playwright.chromium.connectOverCDP("http://localhost:9222")'.
+2.  Do NOT use 'playwright.chromium.launch()'.
+3.  Get the existing browser context (browser.contexts()[0]).
+4.  Get the existing page (context.pages()[0]).
+5.  Write a simple test that navigates to a protected page (like '/dashboard') and takes a screenshot to prove it's logged in.
+
+--- CONTEXT ---
+User Story: ${story.title}
+Example protected page: '/dashboard'
+Screenshot name: 'cdp-debug-screenshot.png'
+`;
+            }
+            return '';
+        }
+
+        function generateFinalAsset(story, taskType) {
+            if (taskType === 'manual') {
+                return `
+<div class="overflow-x-auto">
+    <table class="excel-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Feature</th>
+                <th>Scenario</th>
+                <th>Steps</th>
+                <th>Expected Result</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>TC-001</td>
+                <td>${story.title}</td>
+                <td>Valid Login</td>
+                <td>1. Navigate to login page.<br>2. Enter 'user@test.com' in username.<br>3. Enter 'Pass123!' in password.<br>4. Click 'Login'.</td>
+                <td>User is redirected to their dashboard.</td>
+            </tr>
+            <tr>
+                <td>TC-002</td>
+                <td>${story.title}</td>
+                <td>Invalid Password</td>
+                <td>1. Navigate to login page.<br>2. Enter 'user@test.com' in username.<br>3. Enter 'WrongPassword' in password.<br>4. Click 'Login'.</td>
+                <td>An error message 'Invalid credentials' is displayed.</td>
+            </tr>
+            <tr>
+                <td>TC-003</td>
+                <td>${story.title}</td>
+                <td>Blank Email</td>
+                <td>1. Navigate to login page.<br>2. Leave username blank.<br>3. Enter 'Pass1G23!' in password.</td>
+                <td>The 'Login' button is disabled.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+                `;
+            }
+
+            if (taskType === 'playwright') {
+                const pageName = story.title.split(' ')[0];
+                const pageFile = `${pageName.toLowerCase()}.page.ts`;
+                const specFile = `${pageName.toLowerCase()}.spec.ts`;
+                
+                return `
+<div class="space-y-4">
+    <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">${pageFile}</label>
+        <pre><code class="language-typescript">
+<span class="token.keyword">import</span> { <span class="token.punctuation">{</span> Page<span class="token.punctuation">,</span> Locator<span class="token.punctuation">,</span> expect <span class="token.punctuation">}</span> } <span class="token.keyword">from</span> <span class="token.string">'@playwright/test'</span><span class="token.punctuation">;</span>
+
+<span class="token.keyword">export</span> <span class="token.keyword">class</span> <span class="token.function">${pageName}Page</span> <span class="token.punctuation">{</span>
+    <span class="token.keyword">readonly</span> page<span class="token.punctuation">:</span> Page<span class="token.punctuation">;</span>
+${Object.entries(story.selectors).map(([name, selector]) => `    <span class="token.keyword">readonly</span> ${name}<span class="token.punctuation">:</span> Locator<span class="token.punctuation">;</span>`).join('\n')}
+
+    <span class="token.function">constructor</span>(<span class="token.punctuation">(</span>page<span class="token.punctuation">:</span> Page<span class="token.punctuation">)</span> <span class="token.punctuation">{</span>
+        <span class="token.keyword">this</span><span class="token.punctuation">.</span>page <span class="token.punctuation">=</span> page<span class="token.punctuation">;</span>
+${Object.entries(story.selectors).map(([name, selector]) => `        <span class="token.keyword">this</span><span class="token.punctuation">.</span>${name} <span class="token.punctuation">=</span> page<span class="token.punctuation">.</span><span class="token.function">locator</span>(<span class="token.string">'${selector}'</span>)<span class="token.punctuation">;</span>`).join('\n')}
+    <span class="token.punctuation">}</span>
+
+    <span class="token.keyword">async</span> <span class="token.function">navigateTo</span>(<span class="token.punctuation">)</span> <span class="token.punctuation">{</span>
+        <span class="token.keyword">await</span> <span class="token.keyword">this</span><span class="token.punctuation">.</span>page<span class="token.punctuation">.</span><span class="token.function">goto</span>(<span class="token.string">'/login'</span>)<span class="token.punctuation">;</span>
+    <span class="token.punctuation">}</span>
+
+    <span class="token.keyword">async</span> <span class="token.function">login</span>(<span class="token.punctuation">(</span>username<span class="token.punctuation">:</span> <span class="token.keyword">string</span><span class="token.punctuation">,</span> password<span class="token.punctuation">:</span> <span class="token.keyword">string</span><span class="token.punctuation">)</span> <span class="token.punctuation">{</span>
+        <span class="token.keyword">await</span> <span class="token.keyword">this</span><span class="token.punctuation">.</span>${Object.keys(story.selectors)[0]}<span class="token.punctuation">.</span><span class="token.function">fill</span>(username)<span class="token.punctuation">;</span>
+        <span class="token.keyword">await</span> <span class="token.keyword">this</span><span class="token.punctuation">.</span>${Object.keys(story.selectors)[1]}<span class="token.punctuation">.</span><span class="token.function">fill</span>(password)<span class="token.punctuation">;</span>
+        <span class="token.keyword">await</span> <span class="token.keyword">this</span><span class="token.punctuation">.</span>${Object.keys(story.selectors)[2]}<span class="token.punctuation">.</span><span class="token.function">click</span>()<span class="token.punctuation">;</span>
+    <span class="token.punctuation">}</span>
+<span class="token.punctuation">}</span>
+</code></pre>
+    </div>
+    <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">${specFile}</label>
+        <pre><code class="language-typescript">
+<span class="token.keyword">import</span> { <span class="token.punctuation">{</span> test<span class="token.punctuation">,</span> expect <span class="token.punctuation">}</span> } <span class="token.keyword">from</span> <span class="token.string">'@playwright/test'</span><span class="token.punctuation">;</span>
+<span class="token.keyword">import</span> { <span class="token.function">${pageName}Page</span> } <span class="token.keyword">from</span> <span class="token.string">'./${pageName.toLowerCase()}.page'</span><span class="token.punctuation">;</span>
+
+test<span class="token.punctuation">.</span><span class="token.function">describe</span>(<span class="token.string">'${story.title}'</span><span class="token.punctuation">,</span> <span class="token.punctuation">(</span><span class="token.punctuation">)</span> <span class="token.operator">=></span> <span class="token.punctuation">{</span>
+    <span class="token.keyword">let</span> ${pageName.toLowerCase()}Page<span class="token.punctuation">:</span> <span class="token.function">${pageName}Page</span><span class="token.punctuation">;</span>
+
+    test<span class="token.punctuation">.</span><span class="token.function">beforeEach</span>(<span class="token.keyword">async</span> <span class="token.punctuation">(</span><span class="token.punctuation">{</span> page <span class="token.punctuation">}</span><span class="token.punctuation">)</span> <span class="token.operator">=></span> <span class="token.punctuation">{</span>
+        ${pageName.toLowerCase()}Page <span class="token.punctuation">=</span> <span class="token.keyword">new</span> <span class="token.function">${pageName}Page</span>(page)<span class="token.punctuation">;</span>
+        <span class="token.keyword">await</span> ${pageName.toLowerCase()}Page<span class="token.punctuation">.</span><span class="token.function">navigateTo</span>()<span class="token.punctuation">;</span>
+    <span class="token.punctuation">}</span>)<span class="token.punctuation">;</span>
+
+    test(<span class="token.string">'should allow a user to log in with valid credentials'</span><span class="token.punctuation">,</span> <span class="token.keyword">async</span> <span class="token.punctuation">(</span><span class="token.punctuation">{</span> page <span class="token.punctuation">}</span><span class="token.operator">=></span> <span class="token. punctuation">{</span>
+        <span class="token.keyword">await</span> ${pageName.toLowerCase()}Page<span class="token.punctuation">.</span><span class="token.function">login</span>(<span class="token.string">'user@test.com'</span><span class="token.punctuation">,</span> <span class="token.string">'Pass123!'</span>)<span class="token.punctuation">;</span>
+        <span class="token.keyword">await</span> <span class="token.function">expect</span>(page)<span class="token.punctuation">.</span><span class="token.function">toHaveURL</span>(<span class="token.string">'/dashboard'</span>)<span class="token.punctuation">;</span>
+    <span class="token.punctuation">}</span>)<span class="token.punctuation">;</span>
+
+    test(<span class="token.string">'should show an error with invalid credentials'</span><span class="token.punctuation">,</span> <span class="token.keyword">async</span> <span class="token.punctuation">(</span><span class="token.punctuation">{</span> page <span class="token.punctuation">}</span><span class="token.operator">=></span> <span class="token.punctuation">{</span>
+        <span class="token.keyword">await</span> ${pageName.toLowerCase()}Page<span class="token.punctuation">.</span><span class="token.function">login</span>(<span class="token.string">'user@test.com'</span><span class="token.punctuation">,</span> <span class="token.string">'WrongPassword'</span>)<span class="token.punctuation">;</span>
+        <span class="token.keyword">await</span> <span class="token.function">expect</span>(${pageName.toLowerCase()}Page<span class="token.punctuation">.</span>${Object.keys(story.selectors)[3]})<span class="token.punctuation">.</span><span class="token.function">toBeVisible</span>()<span class="token.punctuation">;</span>
+        <span class="token.keyword">await</span> <span class="token.function">expect</span>(${pageName.toLowerCase()}Page<span class="token.punctuation">.</span>${Object.keys(story.selectors)[3]})<span class="token.punctuation">.</span><span class="token.function">toHaveText</span>(<span class="token.string">'Invalid credentials'</span>)<span class="token.punctuation">;</span>
+    <span class="token.punctuation">}</span>)<span class="token.punctuation">;</span>
+<span class="token.punctuation">}</span>)<span class="token.punctuation">;</span>
+</code></pre>
+    </div>
+</div>
+                `;
+            }
+
+            if (taskType === 'cdp') {
+                return `
+<div class="space-y-4">
+    <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">cdp-debug.spec.ts (Example)</label>
+        <pre><code class="language-typescript">
+<span class="token.keyword">import</span> { <span class="token.punctuation">{</span> test<span class="token.punctuation">,</span> expect<span class="token.punctuation">,</span> chromium <span class="token.punctuation">}</span> } <span class="token.keyword">from</span> <span class="token.string">'@playwright/test'</span><span class="token.punctuation">;</span>
+
+test<span class="token.punctuation">.</span><span class="token.function">describe</span>(<span class="token.string">'CDP Debug Script for: ${story.title}'</span><span class="token.punctuation">,</span> <span class="token.punctuation">(</span><span class="token.punctuation">)</span> <span class="token.operator">=></span> <span class="token.punctuation">{</span>
+    
+    test(<span class="token.string">'should connect to existing browser and take screenshot'</span><span class="token.punctuation">,</span> <span class="token.keyword">async</span> <span class="token.punctuation">(</span><span class="token.punctuation">)</span> <span class="token.operator">=></span> <span class="token.punctuation">{</span>
+        <span class="token.comment">// 1. Connect to the browser you opened with --remote-debugging-port=9222</span>
+        <span class="token.keyword">const</span> browser <span class="token.punctuation">=</span> <span class="token.keyword">await</span> chromium<span class="token.punctuation">.</span><span class="token.function">connectOverCDP</span>(<span class="token.string">'http://localhost:9222'</span>)<span class="token.punctuation">;</span>
+        
+        <span class="token.comment">// 2. Get the existing context (which has your login cookies)</span>
+        <span class="token.keyword">const</span> context <span class="token.punctuation">=</span> browser<span class="token.punctuation">.</span><span class="token.function">contexts</span>()<span class="token.punctuation">[</span>0<span class="token.punctuation">]</span><span class="token.punctuation">;</span>
+        
+        <span class="token.comment">// 3. Get the existing page/tab you have open</span>
+        <span class="token.keyword">const</span> page <span class="token.punctuation">=</span> context<span class="token.punctuation">.</span><span class="token.function">pages</span>()<span class="token.punctuation">[</span>0<span class="token.punctuation">]</span><span class="token.punctuation">;</span>
+        
+        <span class="token.comment">// 4. Run your test actions on the already-logged-in page</span>
+        <span class="token.keyword">await</span> page<span class="token.punctuation">.</span><span class="token.function">goto</span>(<span class="token.string">'/dashboard'</span>)<span class="token.punctuation">;</span> <span class="token.comment">// Navigate to a page that requires auth</span>
+        
+        <span class="token.comment">// 5. Verify you are logged in (e.g., check for a dashboard element)</span>
+        <span class="token.keyword">await</span> <span class="token.function">expect</span>(page<span class="token.punctuation">.</span><span class="token.function">locator</span>(<span class="token.string">'h1:has-text("Dashboard")'</span>))<span class="token.punctuation">.</span><span class="token.function">toBeVisible</span>()<span class="token.punctuation">;</span>
+        
+        <span class="token.comment">// 6. Take a screenshot to prove it worked</span>
+        <span class="token.keyword">await</span> page<span class="token.punctuation">.</span><span class="token.function">screenshot</span>(<span class="token.punctuation">{</span> path<span class="token.punctuation">:</span> <span class="token.string">'cdp-debug-screenshot.png'</span> <span class="token.punctuation">}</span>)<span class="token.punctuation">;</span>
+        
+        <span class="token.comment">// 7. Disconnect from the browser (don't close it)</span>
+        <span class="token.keyword">await</span> browser<span class="token.punctuation">.</span><span class="token.function">disconnect</span>()<span class="token.punctuation">;</span>
+    <span class="token.punctuation">}</span>)<span class="token.punctuation">;</span>
+<span class="token.punctuation">}</span>)<span class="token.punctuation">;</span>
+</code></pre>
+    </div>
+</div>
+                `;
+            }
+            return '';
+        }
+        
+        // --- UTILITY FUNCTIONS ---
+        function copyEditorToClipboard(editorType) {
+            const editor = (editorType === 'helper') ? appState.helperEditor : appState.agentEditor;
+            if (!editor) {
+                showToast('Editor not initialized.', true);
+                return;
+            }
+            const text = editor.getValue();
+            
+            // Use a temporary textarea to copy
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                // Use execCommand as a fallback for navigator.clipboard
+                document.execCommand('copy');
+                showToast('Copied to clipboard!');
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                showToast('Failed to copy.', true);
+            }
+            document.body.removeChild(textArea);
+        }
+        
+        function showToast(message, isError = false) {
+            toast.textContent = message;
+            toast.classList.remove('opacity-0', 'translate-y-2', 'bg-green-600', 'bg-red-600');
+            
+            if(isError) {
+                toast.classList.add('bg-red-600');
+            } else {
+                toast.classList.add('bg-green-600');
+            }
+            
+            toast.classList.add('opacity-100');
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                toast.classList.remove('opacity-100');
+            }, 2000);
+        }
+
+    </script>
+    
+    <!-- Load Monaco Editor bundle at the end of the body -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.js"></script>
+</body>
+</html>
+

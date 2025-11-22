@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Course Discovery // Dynamic Theming & Tag Filters</title>
+    <!-- Use Inter font for a clean, modern, and legible aesthetic -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- 1. THEME COLOR PALETTE (LIGHT) --- */
+        :root {
+            /* Light Theme Defaults */
+            --color-deep-bg: #F5F5F5; /* Main Background (Light Gray/Off-White) */
+            --color-card-bg: #FFFFFF; /* Card/Container Background (White) */
+            --color-filter-bg: #FFFFFF; /* Filter Content Background (White) */
+            --color-primary-accent: #FF9900; /* AWS Orange Accent (Yellow Tag Color) */
+            --color-secondary-success: #34A853; /* Professional Green for High Scores */
+            --color-rating-star: #F9A400; /* Gold/Rating */
+            --color-text-dark: #232F3E; /* Main Text (AWS Dark Blue/Gray) */
+            --color-text-mid: #687078; /* Subdued Text (Medium Gray) */
+            --color-border-subtle: #D1D5DB; /* Light Border/Separator */
+            --color-border-glow: rgba(255, 153, 0, 0.5); /* Orange Border/Glow */
+            --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.1); 
+
+            /* Spacing and Dimensions */
+            --spacing-s: 16px;
+            --spacing-m: 24px;
+            --spacing-l: 40px;
+            --card-radius: 6px; 
+            --shadow-accent: 0 0 8px rgba(255, 153, 0, 0.4); 
+        }
+
+        /* --- 2. DARK AMBIENT THEME OVERRIDE (Applied when any filter is active) --- */
+        :root[data-theme="dark"] {
+            --color-deep-bg: #1A1A2E; /* Deep Navy/Ambient Background */
+            --color-card-bg: #2C394B; /* Slightly lighter card surface */
+            --color-filter-bg: #37475A; /* Dark Filter Dropdown */
+            --color-text-dark: #ECF0F1; /* Light Text */
+            --color-text-mid: #BDC3C7; /* Subdued Light Text */
+            --color-border-subtle: #4A637F; /* Darker subtle border */
+            --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.5); 
+            /* Special Dark Theme Tag Color - The filter tag itself remains bright yellow for visibility */
+        }
+
+        /* --- 3. BASE STYLES & TRANSITIONS --- */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-deep-bg);
+            color: var(--color-text-dark);
+            margin: 0;
+            padding-top: 60px; 
+            min-height: 100vh;
+            /* Smoothly transition colors when theme changes */
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        a { text-decoration: none; color: var(--color-primary-accent); }
+
+        /* General element adaptation for dark theme */
+        .header, .search-bar input, .filter-group, .filter-content, .course-card, .ai-insight-tooltip, .sort-group {
+            transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+            background-color: var(--color-card-bg);
+            border-color: var(--color-border-subtle);
+            color: var(--color-text-dark);
+        }
+
+        /* --- 4. HEADER AND SEARCH BAR --- */
+        .header {
+            position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+            background-color: var(--color-card-bg);
+            border-bottom: 1px solid var(--color-border-subtle);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            z-index: 100; display: flex; align-items: center;
+            padding: 0 var(--spacing-l); gap: var(--spacing-l);
+        }
+        .logo { 
+            font-size: 1.6em; font-weight: 900; color: var(--color-primary-accent); /* Made logo bolder */
+        }
+        .search-bar { flex-grow: 1; max-width: 800px; }
+        .search-bar input {
+            width: 100%; padding: 8px 16px; 
+            border: 1px solid var(--color-border-subtle);
+            border-radius: 4px; font-size: 1em; 
+            color: var(--color-text-dark);
+            background-color: var(--color-filter-bg);
+        }
+        .search-bar input::placeholder { color: var(--color-text-mid); }
+        .search-bar input:focus { 
+            outline: none; border-color: var(--color-primary-accent); 
+            box-shadow: 0 0 0 2px rgba(255, 153, 0, 0.5);
+        }
+        
+        /* --- 5. MAIN LAYOUT & GRID --- */
+        .main-container { padding: var(--spacing-m); max-width: 1600px; margin: 0 auto; }
+        .course-list__grid { display: grid; gap: var(--spacing-m); }
+        .card-header { 
+            font-size: 1.6em; font-weight: 700; margin-bottom: var(--spacing-s); 
+            color: var(--color-text-dark);
+            border-left: 4px solid var(--color-primary-accent); 
+            padding-left: 15px;
+            transition: color 0.5s ease; /* Ensure heading color adapts */
+        }
+
+        @media (min-width: 1400px) { .course-list__grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (min-width: 1024px) and (max-width: 1399px) { .course-list__grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (min-width: 768px) and (max-width: 1023px) { .course-list__grid { grid-template-columns: repeat(2, 1fr); } }
+        
+        @media (max-width: 767px) {
+            .header { padding: 0 var(--spacing-s); gap: var(--spacing-s); }
+            .logo { font-size: 1.2em; }
+            .main-container { padding: var(--spacing-s); }
+            .filter-controls { flex-direction: column; }
+            .filter-group { width: 100%; }
+        }
+
+        /* --- 6. HOVER DROPDOWN FILTER & SORT STYLES --- */
+        .filter-controls {
+            display: flex; gap: 12px; margin-bottom: var(--spacing-m); flex-wrap: wrap; 
+        }
+
+        /* Common style for Filter and Sort groups */
+        .filter-group, .sort-group { 
+            position: relative; 
+            background-color: var(--color-card-bg);
+            border: 1px solid var(--color-border-subtle);
+            border-radius: var(--card-radius);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); 
+            cursor: pointer; z-index: 50; 
+            flex-grow: 1; min-width: 150px;
+        }
+        .sort-group { flex-grow: 0; min-width: 180px; }
+
+        .filter-group:hover, .sort-group:hover {
+            border-color: var(--color-primary-accent);
+            box-shadow: var(--shadow-accent);
+        }
+
+        .filter-toggle, .sort-toggle {
+            padding: 10px 14px;
+            color: var(--color-text-dark);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+        
+        .filter-content, .sort-content {
+            position: absolute; top: 100%; left: 0; min-width: 200px; 
+            background-color: var(--color-filter-bg);
+            border: 1px solid var(--color-primary-accent);
+            border-top: none; 
+            border-radius: 0 0 var(--card-radius) var(--card-radius);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); 
+            
+            visibility: hidden; opacity: 0; transform: translateY(10px);
+            transition: visibility 0s, opacity 0.2s ease, transform 0.2s ease;
+            z-index: 60; padding: var(--spacing-s);
+        }
+
+        .filter-group:hover .filter-content, .sort-group:hover .sort-content {
+            visibility: visible; opacity: 1; transform: translateY(0);
+        }
+        
+        .filter-content > div, .sort-content > div { display: flex; flex-direction: column; }
+
+        .radio-item, .checkbox-item { 
+            display: flex; align-items: center; margin-bottom: 8px; 
+            font-size: 0.9em; 
+            color: var(--color-text-dark);
+            cursor: pointer; transition: color 0.2s;
+        }
+        .radio-item input, .checkbox-item input { 
+            appearance: none; width: 14px; height: 14px; 
+            border: 1px solid var(--color-text-mid); 
+            border-radius: 2px; margin-right: 8px; 
+            background-color: var(--color-filter-bg); 
+            transition: all 0.2s;
+        }
+        .radio-item input[type="radio"], .checkbox-item input[type="radio"] { border-radius: 50%; }
+        /* Checked state uses the success color */
+        .radio-item input:checked, .checkbox-item input:checked { 
+            border-color: var(--color-secondary-success); 
+            background-color: var(--color-secondary-success); 
+        }
+        .radio-item:hover, .checkbox-item:hover { color: var(--color-primary-accent); }
+
+        
+        /* --- 7. COURSE CARD STYLES --- */
+        .course-card {
+            position: relative; 
+            background-color: var(--color-card-bg);
+            border-radius: var(--card-radius); overflow: hidden;
+            box-shadow: var(--shadow-subtle); 
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            color: var(--color-text-dark);
+            border: 1px solid var(--color-border-subtle);
+            display: flex;
+            flex-direction: column;
+        }
+        .course-card:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15), var(--shadow-accent);
+            border-color: var(--color-primary-accent); 
+        }
+        
+        .course-card__image-container { position: relative; padding-bottom: 56.25%; overflow: hidden; background-color: #F0F0F0; }
+        .course-card__image { position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0.9; transition: opacity 0.3s; }
+        .course-card:hover .course-card__image { opacity: 1.0; }
+
+        .course-card__content { padding: var(--spacing-s) var(--spacing-m); flex-grow: 1; display: flex; flex-direction: column; }
+        .course-card__title { font-size: 1.1em; font-weight: 600; margin: 0 0 4px 0; line-height: 1.4; color: var(--color-text-dark); height: 4.5em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+        .course-card__metadata { font-size: 0.8em; color: var(--color-text-mid); margin-bottom: 8px;}
+        .course-card__rating { display: flex; align-items: center; margin-top: 8px; font-size: 0.9em; font-weight: 600;}
+        .star-icon { color: var(--color-rating-star); margin-right: 4px; font-size: 1.3em; line-height: 1;}
+        
+        .ai-score { margin-left: auto; font-weight: 800; font-size: 0.9em; padding: 4px 8px; border-radius: 4px; border: 1px solid; }
+        .ai-score-high { color: var(--color-secondary-success); border-color: var(--color-secondary-success); }
+        .ai-score-mid { color: var(--color-primary-accent); border-color: var(--color-primary-accent); }
+        .ai-score-low { color: var(--color-text-mid); border-color: var(--color-text-mid); }
+
+        /* --- 8. AI INSIGHT TOOLTIP STYLES --- */
+        .ai-insight-tooltip {
+            position: absolute; top: 50%; right: 100%; transform: translate(-10px, -50%); 
+            width: 250px; 
+            background-color: var(--color-filter-bg);
+            border: 1px solid var(--color-primary-accent);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: var(--card-radius);
+            padding: var(--spacing-s); 
+            color: var(--color-text-dark);
+            font-size: 0.85em;
+            pointer-events: none; opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; z-index: 1000; 
+        }
+
+        .course-card:hover .ai-insight-tooltip {
+            opacity: 1; transform: translate(-var(--spacing-s), -50%); 
+        }
+        .ai-insight-tooltip h5 { color: var(--color-primary-accent); font-size: 1em; margin: 0 0 8px 0; border-bottom: 1px solid var(--color-border-subtle); padding-bottom: 5px; }
+        .ai-insight-tooltip p { margin: 0 0 5px 0; color: var(--color-text-mid); }
+        .ai-insight-tooltip strong { color: var(--color-text-dark); font-weight: 600; display: block; margin-top: 5px; }
+        .ai-insight-tooltip-footer { color: var(--color-text-mid); margin-top: 5px; font-size: 0.8em; }
+
+        @media (max-width: 1400px) {
+            .ai-insight-tooltip { right: auto; left: 100%; transform: translate(10px, -50%); }
+            .course-card:hover .ai-insight-tooltip { transform: translate(var(--spacing-s), -50%); }
+        }
+
+        /* --- 9. ACTIVE FILTER TAGS STYLES --- */
+        .active-filters-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px; 
+            margin-bottom: var(--spacing-m);
+            align-items: center;
+            min-height: 20px; 
+        }
+
+        .filter-tag {
+            background-color: var(--color-primary-accent); /* Yellow/Orange */
+            color: #1A1A2E; /* Very dark text for high contrast on yellow */
+            padding: 7px 14px;
+            border-radius: 9999px; /* Pill shape */
+            font-size: 0.9em;
+            font-weight: 700; 
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            transition: background-color 0.2s, opacity 0.2s, transform 0.1s;
+            border: 1px solid transparent;
+        }
+
+        .filter-tag:hover {
+            background-color: #E68A00; /* Slightly darker yellow on hover */
+            transform: translateY(-1px);
+        }
+
+        .filter-tag__clear {
+            font-weight: 900;
+            font-size: 1.1em;
+            line-height: 1;
+            margin-left: 4px;
+            color: #1A1A2E; 
+            transition: color 0.2s;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="logo">AI AGENT XPLORER</div>
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search for 'LLM', 'RAG', 'Huggingface', or any course title...">
+        </div>
+    </header>
+
+    <div class="main-container">
+        <main class="content-area">
+            <div id="cors-warning" style="display: none; background-color: #FFF0F0; color: #DC2626; border: 1px solid #DC2626; padding: var(--spacing-s); border-radius: var(--card-radius); margin-bottom: var(--spacing-s);">
+                ⚠️ **CORS/File Error:** If you see no courses, your browser is likely blocking local file loading (CORS policy). To fix this, you must run this HTML file on a **local web server**.
+            </div>
+            
+            <!-- HOVER-ACTIVATED DROPDOWN FILTER AND SORT PANEL -->
+            <div class="filter-controls">
+                
+                <!-- SORT BY (Radio Buttons/Single Select) -->
+                <div class="sort-group" data-group="sort">
+                    <div class="sort-toggle" id="sort-toggle">SORT BY: AI Score</div>
+                    <div class="sort-content">
+                        <div id="sort-options">
+                            <label class="radio-item">
+                                <input type="radio" name="sortRadio" data-filtertype="sort" value="ai_score_desc" checked onchange="handleFilterChange(event)"> AI Score (Best Match)
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="sortRadio" data-filtertype="sort" value="rating_desc" onchange="handleFilterChange(event)"> Highest Rating
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="sortRadio" data-filtertype="sort" value="duration_asc" onchange="handleFilterChange(event)"> Duration (Shortest First)
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="sortRadio" data-filtertype="sort" value="popularity_desc" onchange="handleFilterChange(event)"> Popularity (Most Enrollments)
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="sortRadio" data-filtertype="sort" value="title_asc" onchange="handleFilterChange(event)"> Title (A-Z)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COURSE LEVEL (Radio Buttons/Single Select) -->
+                <div class="filter-group" data-group="level">
+                    <div class="filter-toggle" id="level-toggle">COURSE LEVEL </div>
+                    <div class="filter-content">
+                        <div id="level-filters"></div>
+                    </div>
+                </div>
+
+                <!-- CORE TOPICS (Checkboxes/Multi Select) -->
+                <div class="filter-group" data-group="topic">
+                    <div class="filter-toggle" id="topic-toggle">CORE TOPICS </div>
+                    <div class="filter-content">
+                        <div id="topic-filters"></div>
+                    </div>
+                </div>
+                
+                <!-- DURATION (Checkboxes/Multi Select) -->
+                <div class="filter-group" data-group="duration">
+                    <div class="filter-toggle" id="duration-toggle">DURATION </div>
+                    <div class="filter-content">
+                        <div id="duration-filters"></div>
+                    </div>
+                </div>
+
+                <!-- MINIMUM RATING (Radio Buttons/Single Select) -->
+                <div class="filter-group" data-group="rating">
+                    <div class="filter-toggle" id="rating-toggle">MINIMUM RATING </div>
+                    <div class="filter-content">
+                        <div id="rating-filters">
+                            <label class="radio-item">
+                                <input type="radio" name="minRatingRadio" data-filtertype="rating" value="4.5" onchange="handleFilterChange(event)"> 4.5 Stars & Up
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="minRatingRadio" data-filtertype="rating" value="4.0" onchange="handleFilterChange(event)"> 4.0 Stars & Up
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="minRatingRadio" data-filtertype="rating" value="0" checked onchange="handleFilterChange(event)"> Any Rating (Default)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MIN ENROLLMENTS (Radio Buttons/Single Select) -->
+                <div class="filter-group" data-group="enrollments">
+                    <div class="filter-toggle" id="enrollment-toggle">MIN ENROLLMENTS </div>
+                    <div class="filter-content">
+                        <div id="enrollment-filters">
+                            <label class="radio-item">
+                                <input type="radio" name="minEnrollments" data-filtertype="enrollment" value="50000" onchange="handleFilterChange(event)"> 50,000+ Enrollments
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="minEnrollments" data-filtertype="enrollment" value="10000" onchange="handleFilterChange(event)"> 10,000+ Enrollments
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="minEnrollments" data-filtertype="enrollment" value="5000" onchange="handleFilterChange(event)"> 5,000+ Enrollments
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="minEnrollments" data-filtertype="enrollment" value="0" checked onchange="handleFilterChange(event)"> Any Enrollment (Default)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- END HOVER-ACTIVATED DROPDOWN FILTER AND SORT PANEL -->
+
+            <h1 class="card-header" id="resultsTitle">Top Results Sorted by AI Score (V 2.3)</h1>
+            
+            <!-- Container for filter tags/buttons -->
+            <div id="active-filters-container" class="active-filters-row">
+                <!-- Filter tags will be injected here -->
+            </div>
+
+            <div id="course-listing" class="course-list__grid">
+                <!-- Course cards will be injected here -->
+            </div>
+            <p id="noResults" style="display: none; text-align: center; margin-top: 50px; color: var(--color-text-mid); font-size: 1.2em;">
+                Query returned no results. Adjust your filters or search terms.
+            </p>
+        </main>
+    </div>
+
+    <script>
+        let COURSE_DATA = [];
+        let filteredCourses = [];
+        let activeFilters = {
+            level: '',
+            topic: new Set(),
+            duration: new Set(),
+            rating: 0,
+            enrollment: 0,
+            search: '',
+            // State for sorting
+            sort: 'ai_score_desc' // Default to AI Score descending
+        };
+        
+        // Function to format large numbers with commas
+        function formatNumber(num) {
+            if (typeof num !== 'number' || isNaN(num)) {
+                return 'N/A';
+            }
+            return num.toLocaleString('en-US'); 
+        }
+
+        // Function to generate filter tags and dummy analytics
+        function generateDummyAnalytics(course, level) {
+            const hours = parseFloat(course.totalHours) || 0;
+            const rating = parseFloat(course.ratingValue) || 4.0;
+            const ratingsCount = parseInt(course.ratingsCount) || 0; 
+            const whatYoullLearn = (course.whatYoullLearn || []).map(item => item.toLowerCase());
+
+            let relevance = 0.5;
+            if (whatYoullLearn.some(item => item.includes('llm') || item.includes('rag') || item.includes('api usage'))) {
+                relevance = (level === 'Beginner' ? 0.75 : (level === 'Intermediate' ? 0.9 : 0.95));
+            } else if (whatYoullLearn.some(item => item.includes('generative ai') || item.includes('ai foundations'))) {
+                relevance = 0.8;
+            }
+
+            const quality = Math.min(1.0, rating / 5.0);
+            const popularity = Math.min(1.0, ratingsCount / 50000); 
+
+            const finalScore = (relevance * 0.4 + quality * 0.4 + popularity * 0.2) * 100;
+            
+            const baseLectures = Math.ceil(hours * (level === 'Beginner' ? 2 : (level === 'Intermediate' ? 3 : 4)));
+            const lectures = Math.max(10, baseLectures);
+            const enrollments = Math.max(5000, Math.floor(ratingsCount * 1.5 + Math.random() * 10000));
+
+            const tags = [level];
+            if (hours < 5) tags.push('Short (< 5h)');
+            else if (hours < 10) tags.push('Short (5-10h)');
+            else if (hours <= 25) tags.push('Medium (10-25h)');
+            else tags.push('Long (> 25h)');
+
+            if (whatYoullLearn.some(item => item.includes('generative ai'))) tags.push('Generative AI');
+            if (whatYoullLearn.some(item => item.includes('langchain'))) tags.push('Langchain');
+            if (whatYoullLearn.some(item => item.includes('copilot') || item.includes('studio'))) tags.push('Copilot/Studio');
+            if (whatYoullLearn.some(item => item.includes('llm') || item.includes('prompt'))) tags.push('LLM/Prompt');
+            if (whatYoullLearn.some(item => item.includes('api') || item.includes('python') || item.includes('javascript'))) tags.push('Development');
+            if (whatYoullLearn.some(item => item.includes('ethics') || item.includes('impact'))) tags.push('Ethics/Impact');
+            if (whatYoullLearn.some(item => item.includes('vector') || item.includes('embedding'))) tags.push('RAG/Vector');
+
+
+            return {
+                relevance_score: parseFloat(relevance.toFixed(2)),
+                insight: {
+                    relevance: relevance.toFixed(2),
+                    quality: quality.toFixed(2),
+                    popularity: popularity.toFixed(2),
+                    reason: finalScore > 85 ? "High relevance and quality metrics detected. Recommended for professional application." : 
+                            finalScore > 70 ? "Solid overall score with balanced metrics. Great value proposition." : 
+                            "Good starting point, though relevance or popularity scores are moderate."
+                },
+                final_comparison_score: parseFloat(finalScore.toFixed(2)),
+                filter_tags: tags,
+                lectures: lectures,
+                enrollments: enrollments,
+            };
+        }
+
+        async function loadCourseData() {
+            if (window.location.protocol === 'file:') {
+                document.getElementById('cors-warning').style.display = 'block';
+            }
+
+            const fileNames = {
+                'Beginner': 'beginner_courses_courses.json',
+                'Intermediate': 'intermediate_courses_courses.json',
+                'Expert': 'expert_courses_courses.json'
+            };
+
+            const coursesByLevel = {};
+
+            try {
+                const promises = Object.entries(fileNames).map(async ([level, filename]) => {
+                    const response = await fetch(filename);
+                    if (!response.ok) {
+                        console.warn(`Could not load ${filename}. Assuming empty data for this level.`);
+                        return;
+                    }
+                    const data = await response.json();
+                    coursesByLevel[level] = data;
+                });
+                
+                await Promise.all(promises);
+
+                COURSE_DATA = [
+                    ...(coursesByLevel.Beginner || []).map(c => ({
+                        ...c, level: 'Beginner', Rating: parseFloat(c.ratingValue) || 4.0, totalHours: parseFloat(c.totalHours) || 0, ImageURL: c.imageSrc || "https://placehold.co/280x157/FFFFFF/FF9900?text=Beginner", analytics: generateDummyAnalytics(c, 'Beginner')
+                    })),
+                    ...(coursesByLevel.Intermediate || []).map(c => ({
+                        ...c, level: 'Intermediate', Rating: parseFloat(c.ratingValue) || 4.0, totalHours: parseFloat(c.totalHours) || 0, ImageURL: c.imageSrc || "https://placehold.co/280x157/FFFFFF/34A853?text=Intermediate", analytics: generateDummyAnalytics(c, 'Intermediate')
+                    })),
+                    ...(coursesByLevel.Expert || []).map(c => ({
+                        ...c, level: 'Expert', Rating: parseFloat(c.ratingValue) || 4.0, totalHours: parseFloat(c.totalHours) || 0, ImageURL: c.imageSrc || "https://placehold.co/280x157/FFFFFF/232F3E?text=Expert", analytics: generateDummyAnalytics(c, 'Expert')
+                    }))
+                ];
+
+                if (COURSE_DATA.length === 0) {
+                     document.getElementById('cors-warning').style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error('Data Loading Failed:', error);
+                COURSE_DATA = [];
+                document.getElementById('cors-warning').style.display = 'block';
+            }
+        }
+
+
+        // --- Helper Functions for Display ---
+
+        /**
+         * Returns the formatted display string for the applied rating filter (e.g., "4.5 ★ & Up").
+         */
+        function getRatingDisplayValue(rating) {
+            if (rating === 4.5) return '4.5 ★ & Up';
+            if (rating === 4.0) return '4.0 ★ & Up';
+            // Default check for 0
+            if (rating === 0) return 'Any Rating';
+            return `${rating.toFixed(1)} ★ & Up`; 
+        }
+
+        /**
+         * Returns the formatted display string for the applied enrollment filter (e.g., "50,000+ Enrollments").
+         */
+        function getEnrollmentDisplayValue(enrollment) {
+            if (enrollment === 0) return 'Any Enrollment';
+            return `${formatNumber(enrollment)}+ Enrollments`;
+        }
+        
+        /**
+         * Returns the display text for the active sort option.
+         */
+        function getSortDisplayValue(sortKey) {
+            switch (sortKey) {
+                case 'ai_score_desc': return 'AI Score (Best Match)';
+                case 'rating_desc': return 'Highest Rating';
+                case 'duration_asc': return 'Duration (Shortest First)';
+                case 'popularity_desc': return 'Popularity (Most Enrollments)';
+                case 'title_asc': return 'Title (A-Z)';
+                default: return 'AI Score (Best Match)';
+            }
+        }
+
+
+        /**
+         * Checks if any non-search filter or the search bar is active.
+         * This function determines if the dark ambient theme should be applied.
+         */
+        function anyFilterActive() {
+            // Check all filters excluding 'sort'
+            return activeFilters.level.length > 0 ||
+                   activeFilters.topic.size > 0 ||
+                   activeFilters.duration.size > 0 ||
+                   activeFilters.rating > 0 ||
+                   activeFilters.enrollment > 0 ||
+                   activeFilters.search.length > 0;
+        }
+
+        /**
+         * Generates the list of active filter tags/buttons and injects them into the DOM.
+         */
+        function generateFilterTags() {
+            const container = document.getElementById('active-filters-container');
+            const tags = [];
+            
+            // 1. Search Tag
+            if (activeFilters.search) {
+                // Use tag type 'search' for custom clearing logic
+                tags.push({ type: 'search', key: 'search', display: `Search: "${activeFilters.search}"`, value: activeFilters.search });
+            }
+
+            // 2. Single-select Radio (Level)
+            if (activeFilters.level) {
+                tags.push({ type: 'level', key: 'level', display: `Level: ${activeFilters.level}`, value: activeFilters.level });
+            }
+
+            // 3. Multi-select Sets (Topic, Duration)
+            const setFilters = [
+                { key: 'topic', prefix: 'Topic' },
+                { key: 'duration', prefix: 'Duration' }
+            ];
+
+            setFilters.forEach(({ key, prefix }) => {
+                activeFilters[key].forEach(value => {
+                    tags.push({ type: key, key: key, display: `${prefix}: ${value}`, value: value });
+                });
+            });
+
+            // 4. Single-select Radios (Rating, Enrollment)
+            if (activeFilters.rating > 0) {
+                const display = getRatingDisplayValue(activeFilters.rating);
+                tags.push({ type: 'rating', key: 'rating', display: `Min Rating: ${display}`, value: activeFilters.rating });
+            }
+            
+            if (activeFilters.enrollment > 0) {
+                const display = getEnrollmentDisplayValue(activeFilters.enrollment);
+                tags.push({ type: 'enrollment', key: 'enrollment', display: `Min Enrollments: ${display}`, value: activeFilters.enrollment });
+            }
+            
+            // 5. Sort By Tag (Requested by user: visible when not default AI Score)
+            if (activeFilters.sort !== 'ai_score_desc') {
+                const display = getSortDisplayValue(activeFilters.sort);
+                // Use tag type 'sort' for custom clearing logic
+                tags.push({ type: 'sort', key: 'sort', display: `Sorting: ${display}`, value: activeFilters.sort });
+            }
+
+            // Render the tags. The value is passed as a string for use in the onclick.
+            container.innerHTML = tags.map(tag => {
+                // For numeric values (rating/enrollment), pass the numeric value stringified
+                const tagValue = tag.value.toString().replace(/"/g, '&quot;'); 
+                return `
+                    <div class="filter-tag" onclick="removeFilter('${tag.key}', '${tagValue}')">
+                        ${tag.display}
+                        <span class="filter-tag__clear" aria-label="Clear filter">×</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /**
+         * Removes a filter when a user clicks an active tag.
+         * @param {string} filterType - 'level', 'topic', 'duration', 'rating', 'enrollment', 'search', 'sort'.
+         * @param {string} value - The value to remove (string representation).
+         */
+        function removeFilter(filterType, value) {
+            if (filterType === 'rating') {
+                activeFilters.rating = 0;
+                document.querySelector('input[name="minRatingRadio"][value="0"]').checked = true;
+            } else if (filterType === 'enrollment') {
+                activeFilters.enrollment = 0;
+                document.querySelector('input[name="minEnrollments"][value="0"]').checked = true;
+            } else if (filterType === 'level') {
+                activeFilters.level = '';
+                document.querySelector('input[name="levelRadio"][value=""]').checked = true; // Assumes an 'Any Level' radio option with value=""
+            } else if (filterType === 'search') {
+                activeFilters.search = '';
+                document.getElementById('searchInput').value = '';
+            } else if (filterType === 'sort') { 
+                // Reset to default sort
+                activeFilters.sort = 'ai_score_desc';
+                document.querySelector('input[name="sortRadio"][value="ai_score_desc"]').checked = true;
+            } else if (activeFilters[filterType] instanceof Set) {
+                // Topic and Duration (Sets)
+                activeFilters[filterType].delete(value);
+                // Uncheck the corresponding checkbox
+                const checkbox = document.querySelector(`input[data-filtertype="${filterType}"][value="${value}"]`);
+                if (checkbox) { checkbox.checked = false; }
+            }
+            
+            applyFilters();
+        }
+
+        // --- Core Rendering Function ---
+        // (Render function logic remains the same, focuses only on drawing the cards)
+        function renderCourses(data) {
+            const container = document.getElementById('course-listing');
+            const noResults = document.getElementById('noResults');
+            
+            container.innerHTML = ''; 
+
+            if (data.length === 0) {
+                noResults.style.display = 'block';
+                return;
+            } else {
+                noResults.style.display = 'none';
+            }
+
+            data.forEach(course => {
+                const title = course.title || "Untitled Course";
+                const url = course.link || "#";
+                const rating = course.Rating ? course.Rating.toFixed(1) : 'N/A';
+                const totalHours = course.totalHours || 'N/A';
+                const imageUrl = course.ImageURL || course.imageSrc || "https://placehold.co/280x157/FFFFFF/687078?text=Image+N/A";
+
+                const score = course.analytics.final_comparison_score;
+                let scoreClass = 'ai-score-low';
+                if (score > 85) scoreClass = 'ai-score-high';
+                else if (score >= 70) scoreClass = 'ai-score-mid';
+                
+                const insight = course.analytics.insight;
+                const enrollments = formatNumber(course.analytics.enrollments || 0);
+                const lectures = formatNumber(course.analytics.lectures || 0);
+
+                const tooltipHTML = `
+                    <div class="ai-insight-tooltip">
+                        <h5>AI Agent Analysis</h5>
+                        <p>Relevance: <span style="color: ${insight.relevance > 0.9 ? 'var(--color-secondary-success)' : 'var(--color-primary-accent)'};">${insight.relevance}</span></p>
+                        <p>Quality: <span style="color: ${insight.quality > 0.8 ? 'var(--color-secondary-success)' : 'var(--color-primary-accent)'};">${insight.quality}</span></p>
+                        <p>Popularity: <span style="color: ${insight.popularity > 0.5 ? 'var(--color-secondary-success)' : 'var(--color-primary-accent)'};">${insight.popularity}</span></p>
+                        <strong>Insight:</strong> ${insight.reason}
+                        <div class="ai-insight-tooltip-footer">Hover for deep-dive. Score: ${score.toFixed(1)}</div>
+                    </div>
+                `;
+
+                const cardHTML = `
+                    <a href="${url}" target="_blank" class="course-card">
+                        ${tooltipHTML}
+                        <div class="course-card__image-container">
+                            <img src="${imageUrl}" alt="Course image for ${title}" class="course-card__image" onerror="this.onerror=null;this.src='https://placehold.co/280x157/FFFFFF/687078?text=Image+N/A';">
+                        </div>
+                        <div class="course-card__content">
+                            <h3 class="course-card__title">${title}</h3>
+                            <div class="course-card__metadata">
+                                <span style="color: ${course.level === 'Beginner' ? 'var(--color-primary-accent)' : (course.level === 'Intermediate' ? 'var(--color-secondary-success)' : 'var(--color-text-dark)')}; font-weight: 500;">
+                                    ${course.level}
+                                </span> 
+                                | ${lectures} lectures
+                                | ⏱️ ${totalHours} hrs
+                                <br>
+                                <span style="color: var(--color-text-mid); font-weight: 400;">
+                                    📚 ${enrollments} Enrollments
+                                </span>
+                            </div>
+                            <div class="course-card__rating">
+                                <span class="star-icon">★</span>
+                                <span>${rating}</span>
+                                <span class="ai-score ${scoreClass}">
+                                    ${score.toFixed(1)}
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHTML);
+            });
+        }
+        
+        /**
+         * Updates the text of the filter toggle buttons to reflect the currently active filters.
+         */
+        function updateFilterToggles() {
+            // Helper function to update the toggle for multi-select (Topic, Duration)
+            const updateSetToggle = (id, groupName, activeSet) => {
+                const toggle = document.getElementById(id);
+                if (activeSet.size > 0) {
+                    const selected = Array.from(activeSet).slice(0, 2); // Show max 2
+                    let text = selected.join(', ');
+                    if (activeSet.size > 2) {
+                        text += ` (+${activeSet.size - 2})`;
+                    }
+                    toggle.innerHTML = `<b>${text}</b>`; // Bold active text
+                } else {
+                    toggle.textContent = groupName; // Full group name
+                }
+            };
+            
+            // Sort Toggle
+            const sortToggle = document.getElementById('sort-toggle');
+            sortToggle.textContent = `SORT BY: ${getSortDisplayValue(activeFilters.sort)}`;
+
+            // Level (single-select radio)
+            const levelToggle = document.getElementById('level-toggle');
+            if (activeFilters.level) {
+                levelToggle.innerHTML = `<b>${activeFilters.level}</b>`;
+            } else {
+                levelToggle.textContent = 'COURSE LEVEL';
+            }
+
+            // Multi-select filters (Sets)
+            updateSetToggle('topic-toggle', 'CORE TOPICS', activeFilters.topic);
+            updateSetToggle('duration-toggle', 'DURATION', activeFilters.duration);
+
+            // Single-select filters (Rating and Enrollment)
+            const ratingToggle = document.getElementById('rating-toggle');
+            if (activeFilters.rating > 0) {
+                ratingToggle.innerHTML = `<b>${getRatingDisplayValue(activeFilters.rating)}</b>`;
+            } else {
+                ratingToggle.textContent = 'MINIMUM RATING';
+            }
+
+            const enrollmentToggle = document.getElementById('enrollment-toggle');
+            if (activeFilters.enrollment > 0) {
+                enrollmentToggle.innerHTML = `<b>${getEnrollmentDisplayValue(activeFilters.enrollment)}</b>`;
+            } else {
+                enrollmentToggle.textContent = 'MIN ENROLLMENTS';
+            }
+        }
+
+        /**
+         * Applies the active sort filter to the provided course array.
+         * @param {Array<Object>} courses - The array of courses to sort.
+         * @returns {Array<Object>} The sorted array.
+         */
+        function applySorting(courses) {
+            const sortKey = activeFilters.sort;
+
+            // Simple comparison function for descending/ascending numeric sorts
+            const compare = (a, b, field, direction) => {
+                const valA = a[field] || 0;
+                const valB = b[field] || 0;
+                if (direction === 'desc') {
+                    return valB - valA; // B - A for descending (e.g., 90, 80)
+                }
+                return valA - valB; // A - B for ascending (e.g., 10, 20)
+            };
+
+            switch (sortKey) {
+                case 'ai_score_desc':
+                    return courses.sort((a, b) => compare(a.analytics, b.analytics, 'final_comparison_score', 'desc'));
+                
+                case 'rating_desc':
+                    return courses.sort((a, b) => compare(a, b, 'Rating', 'desc'));
+
+                case 'duration_asc':
+                    // totalHours is already a number due to generateDummyAnalytics
+                    return courses.sort((a, b) => compare(a, b, 'totalHours', 'asc'));
+
+                case 'popularity_desc':
+                    return courses.sort((a, b) => compare(a.analytics, b.analytics, 'enrollments', 'desc'));
+
+                case 'title_asc':
+                    return courses.sort((a, b) => {
+                        const titleA = a.title.toLowerCase();
+                        const titleB = b.title.toLowerCase();
+                        if (titleA < titleB) return -1;
+                        if (titleA > titleB) return 1;
+                        return 0;
+                    });
+                
+                default:
+                    return courses.sort((a, b) => compare(a.analytics, b.analytics, 'final_comparison_score', 'desc'));
+            }
+        }
+
+
+        // --- FILTERING & SEARCH LOGIC ---
+        function applyFilters() {
+            // 1. Filtering Phase
+            filteredCourses = COURSE_DATA.filter(course => {
+                const courseTags = course.analytics.filter_tags || [];
+                const courseRating = course.Rating; 
+                const courseEnrollments = course.analytics.enrollments || 0;
+                
+                const searchTerm = activeFilters.search.toLowerCase();
+                
+                // 1. Search Filter
+                if (searchTerm) {
+                    const searchableText = (
+                        course.title + ' ' + 
+                        (course.whatYoullLearn || []).join(' ') + ' ' + 
+                        courseTags.join(' ') + ' ' + 
+                        course.analytics.insight.reason
+                    ).toLowerCase();
+
+                    if (!searchableText.includes(searchTerm)) {
+                        return false;
+                    }
+                }
+
+                // 2. Rating Filter
+                if (courseRating < activeFilters.rating) { return false; }
+                
+                // 3. Enrollment Filter
+                if (courseEnrollments < activeFilters.enrollment) { return false; }
+
+                // 4. Level Filter (Single Select)
+                const levelPass = activeFilters.level === '' || course.level === activeFilters.level;
+                if (!levelPass) { return false; }
+
+                
+                // 5. Topic filter (Multi Select - Must pass at least one active topic)
+                const topicTags = courseTags.filter(tag => !['Beginner', 'Intermediate', 'Expert'].includes(tag) && !tag.includes('('));
+                const topicPass = activeFilters.topic.size === 0 || topicTags.some(tag => activeFilters.topic.has(tag));
+                if (!topicPass) { return false; }
+
+                // 6. Duration filter (Multi Select - Must pass at least one active duration)
+                const durationTags = courseTags.filter(tag => tag.includes('('));
+                const durationPass = activeFilters.duration.size === 0 || durationTags.some(tag => activeFilters.duration.has(tag));
+                if (!durationPass) { return false; }
+
+                return true;
+            });
+            
+            // 2. Sorting Phase: Sort the filtered results
+            filteredCourses = applySorting(filteredCourses);
+            
+            // 3. Apply Dynamic Theme (Dark ambient when any filter is active)
+            if (anyFilterActive()) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+
+            // 4. Update Main Title
+            const resultsTitle = document.getElementById('resultsTitle');
+            const sortDisplay = getSortDisplayValue(activeFilters.sort);
+            const numResults = filteredCourses.length;
+            
+            const titleText = anyFilterActive() 
+                ? `${numResults} Result${numResults !== 1 ? 's' : ''} Sorted by: ${sortDisplay}`
+                : `Top Results Sorted by: ${sortDisplay} `;
+            resultsTitle.textContent = titleText;
+
+            // 5. Update Filter Tags and Toggles
+            generateFilterTags(); 
+            updateFilterToggles();
+
+            renderCourses(filteredCourses);
+        }
+
+        function handleFilterChange(event) {
+            const element = event.target;
+            const filterType = element.dataset.filtertype;
+            const value = element.value;
+
+            if (filterType === 'rating') {
+                activeFilters.rating = parseFloat(value);
+            } else if (filterType === 'enrollment') {
+                activeFilters.enrollment = parseInt(value, 10);
+            } else if (filterType === 'level') { 
+                activeFilters.level = value; 
+            } else if (filterType === 'sort') {
+                activeFilters.sort = value;
+            } else if (element.type === 'checkbox') {
+                if (filterType === 'topic' || filterType === 'duration') {
+                    if (element.checked) {
+                        activeFilters[filterType].add(value);
+                    } else {
+                        activeFilters[filterType].delete(value);
+                    }
+                }
+            }
+            
+            applyFilters();
+        }
+
+        function handleSearchChange(event) {
+            activeFilters.search = event.target.value.trim();
+            applyFilters();
+        }
+
+        function getUniqueTags() {
+            const uniqueTags = { level: new Set(), topic: new Set(), duration: new Set() };
+            COURSE_DATA.forEach(course => {
+                uniqueTags.level.add(course.level);
+
+                course.analytics.filter_tags.forEach(tag => {
+                    if (tag.includes('(')) {
+                        uniqueTags.duration.add(tag);
+                    } else if (!['Beginner', 'Intermediate', 'Expert'].includes(tag)) {
+                        uniqueTags.topic.add(tag);
+                    }
+                });
+            });
+            return {
+                level: Array.from(uniqueTags.level).sort(),
+                topic: Array.from(uniqueTags.topic).sort(),
+                duration: Array.from(uniqueTags.duration).sort()
+            };
+        }
+
+        /**
+         * Generates HTML for radio buttons (single selection, used for Level).
+         */
+        function generateRadioFilterHTML(id, tags, filterType) {
+            const container = document.getElementById(id);
+            const radioName = `${filterType}Radio`; // Unique name for radio group
+            
+            // Add an 'Any' option for resetting
+            const resetOption = `<label class="radio-item">
+                <input type="radio" name="${radioName}" data-filtertype="${filterType}" value="" checked onchange="handleFilterChange(event)">
+                Any Level (Default)
+            </label>`;
+
+            const radioOptions = tags.map(tag => `
+                <label class="radio-item">
+                    <input type="radio" name="${radioName}" data-filtertype="${filterType}" value="${tag}" onchange="handleFilterChange(event)">
+                    ${tag}
+                </label>
+            `).join('');
+            
+            container.innerHTML = resetOption + radioOptions;
+        }
+
+        /**
+         * Generates HTML for checkboxes (multi selection, used for Topic/Duration).
+         */
+        function generateCheckboxFilterHTML(id, tags, filterType) {
+            const container = document.getElementById(id);
+            container.innerHTML = tags.map(tag => `
+                <label class="checkbox-item">
+                    <input type="checkbox" data-filtertype="${filterType}" value="${tag}" onchange="handleFilterChange(event)">
+                    ${tag}
+                </label>
+            `).join('');
+        }
+        
+        async function setup() {
+            window.removeFilter = removeFilter; 
+            
+            await loadCourseData();
+
+            const uniqueTags = getUniqueTags();
+            
+            // Level uses Radio buttons (with an 'Any' option)
+            generateRadioFilterHTML('level-filters', uniqueTags.level, 'level'); 
+            
+            // Topic and Duration use Checkboxes
+            generateCheckboxFilterHTML('topic-filters', uniqueTags.topic, 'topic');
+            generateCheckboxFilterHTML('duration-filters', uniqueTags.duration, 'duration');
+
+            document.getElementById('searchInput').addEventListener('input', handleSearchChange);
+            applyFilters(); // Initial render and sort
+        }
+
+        setup();
+    </script>
+</body>
+</html>
